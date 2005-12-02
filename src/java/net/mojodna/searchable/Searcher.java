@@ -27,9 +27,10 @@ import com.whirlycott.stylefeeder.search.SearchException;
 public class Searcher extends IndexSupport {
     private static final Logger log = Logger.getLogger( Searcher.class );
     
-    public Searcher() {
-        super();
-        ConvertUtils.register( new UUIDConverter(), UUID.class );
+    static {
+        if ( null == ConvertUtils.lookup( UUID.class ) ) {
+            ConvertUtils.register( new UUIDConverter(), UUID.class );
+        }
     }
     
     /**
@@ -45,17 +46,13 @@ public class Searcher extends IndexSupport {
             final Hits hits = searcher.search(query);
             log.debug("Found " + hits.length() + " document(s) that matched query '" + _query + "':");
 
-            // SF: why a LinkedList?
             final List<Result> results = new LinkedList<Result>();
 
             for (int i = 0; i < hits.length(); i++) {
                 final Document doc = hits.doc(i);
                 Result result = null;
                 
-                // SF: eh?
-                assert doc != null : "Retrieved a null Document from the index";
-
-                final String className = doc.getField( TYPE_FIELD_NAME ).stringValue();
+                final String className = doc.get( TYPE_FIELD_NAME );
                 log.debug("Creating new instance of: " + className);
                 try {
                     final Object o = Class.forName(className).newInstance();
@@ -73,12 +70,12 @@ public class Searcher extends IndexSupport {
                         }
                         result.setStoredFields( storedFields );
 
-                        final Field id = doc.getField( ID_FIELD_NAME );
+                        final String id = doc.get( ID_FIELD_NAME );
                         final Field idClass = doc.getField( ID_TYPE_FIELD_NAME );
                         if ( null != id ) {
-                            log.debug("Setting id to '" + id.stringValue() + "' of type " + idClass.stringValue() );
+                            log.debug("Setting id to '" + id + "' of type " + idClass.stringValue() );
                             try {
-                                final Object idValue = ConvertUtils.convert( id.stringValue(), Class.forName( idClass.stringValue() ) );
+                                final Object idValue = ConvertUtils.convert( id, Class.forName( idClass.stringValue() ) );
                                 PropertyUtils.setSimpleProperty(result, idField, idValue );
                             }
                             catch (final ClassNotFoundException e) {
@@ -96,16 +93,13 @@ public class Searcher extends IndexSupport {
                     result = new GenericResult();
                 }
                 catch (final Exception e) {
-                    throw new SearchException("Could not reconsitute resultant object.", e );
+                    throw new SearchException("Could not reconstitute resultant object.", e );
                 }
                 
                 result.setRanking( i );
                 result.setScore( hits.score( i ) );
                 
                 results.add( result );
-                
-                log.debug("------------------------------------------------");
-
             }
 
             return results;
