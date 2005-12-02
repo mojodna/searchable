@@ -2,7 +2,7 @@ package net.mojodna.searchable;
 
 import java.util.Map;
 
-public abstract class AbstractSearchable implements Searchable {
+public abstract class AbstractResult implements Result {
     private int ranking;
     private Map storedFields;
     private float score;

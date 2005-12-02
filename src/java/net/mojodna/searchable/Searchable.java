@@ -10,8 +10,6 @@ import java.lang.annotation.Target;
  * Marker interface for beans that should be searchable. Implementors of this
  * interface may use the provided annotations.
  * 
- * TODO provide a mechanism for nested properties (which are also Searchables)
- * 
  * @author Seth Fitzsimmons
  */
 public interface Searchable extends Result {

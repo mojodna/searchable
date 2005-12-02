@@ -1,9 +1,9 @@
 package net.mojodna.searchable.example;
 
-import net.mojodna.searchable.AbstractSearchable;
+import net.mojodna.searchable.AbstractResult;
 import net.mojodna.searchable.Searchable;
 
-public class NestedSearchableBean extends AbstractSearchable implements Searchable {
+public class NestedSearchableBean extends AbstractResult implements Searchable {
     private String hello = "world";
     private String empty;
     

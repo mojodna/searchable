@@ -3,12 +3,12 @@ package net.mojodna.searchable.example;
 import java.util.Date;
 import java.util.UUID;
 
-import net.mojodna.searchable.AbstractSearchable;
+import net.mojodna.searchable.AbstractResult;
 import net.mojodna.searchable.BeanIndexer;
 import net.mojodna.searchable.Searchable;
 import net.mojodna.searchable.SearchableException;
 
-public class SearchableBean extends AbstractSearchable implements Searchable {
+public class SearchableBean extends AbstractResult implements Searchable {
     private UUID uuid;
     private String name;
     private String bio;
