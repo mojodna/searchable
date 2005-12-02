@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 public class BeanIndexer extends AbstractIndexer {
@@ -16,7 +17,7 @@ public class BeanIndexer extends AbstractIndexer {
     
     public void add(final Searchable bean) throws IndexingException {
         // process a Searchable
-        begin( getType( bean ), getId( bean ) );
+        final Document doc = createDocument( getType( bean ), getId( bean ) );
         
         // iterate through fields
         for ( final PropertyDescriptor descriptor : PropertyUtils.getPropertyDescriptors( bean ) ) {
@@ -26,10 +27,10 @@ public class BeanIndexer extends AbstractIndexer {
             final String fieldName = descriptor.getName();
 
             log.debug("Indexing property " + fieldName );
-            addFields( bean, descriptor );
+            addFields( doc, bean, descriptor );
         }
         
-        commit();
+        save( doc );
     }
     
     /**
@@ -65,7 +66,7 @@ public class BeanIndexer extends AbstractIndexer {
         return false;
     }
     
-    private void addFields(final Searchable bean, final PropertyDescriptor descriptor) throws IndexingException {
+    private Document addFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor) throws IndexingException {
         // TODO handle Dates and primitives
         // Dates *must* be handled as keywords and can/should be passed into
         // Lucene as Date objects (rather than String representations).
@@ -88,7 +89,7 @@ public class BeanIndexer extends AbstractIndexer {
 
                         final Field field = new Field( fieldname, value, i.stored(), true, i.tokenized(), i.storeTermVector() );
                         field.setBoost( i.boost() );
-                        addField( field );
+                        doc.add( field );
                     } else if ( annotation instanceof Searchable.Stored ) {
                         final Searchable.Stored s = (Searchable.Stored) annotation;
                         
@@ -96,7 +97,7 @@ public class BeanIndexer extends AbstractIndexer {
                             fieldname = s.name();
 
                         final Field field = new Field( fieldname, value, true, false, false );
-                        addField( field );
+                        doc.add( field );
                     }
                 }
                 catch (final Exception e) {
@@ -104,5 +105,7 @@ public class BeanIndexer extends AbstractIndexer {
                 }
             }
         }
+        
+        return doc;
     }
 }
