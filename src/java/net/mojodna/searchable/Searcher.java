@@ -22,8 +22,6 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
-import com.whirlycott.stylefeeder.search.SearchException;
-
 public class Searcher extends IndexSupport {
     private static final Logger log = Logger.getLogger( Searcher.class );
     
