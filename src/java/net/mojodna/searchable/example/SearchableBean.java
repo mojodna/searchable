@@ -1,5 +1,6 @@
 package net.mojodna.searchable.example;
 
+import java.util.Date;
 import java.util.UUID;
 
 import net.mojodna.searchable.AbstractSearchable;
@@ -12,6 +13,10 @@ public class SearchableBean extends AbstractSearchable implements Searchable {
     private String name;
     private String bio;
     private String secretCode;
+    private int number = 42;
+    private float value = 7.2F;
+    private boolean bool = true;
+    private Date now = new Date();
     
     /**
      * As there is no "id" property, an alternative must be specified. Store
@@ -62,6 +67,26 @@ public class SearchableBean extends AbstractSearchable implements Searchable {
     
     public void setSecretCode(final String secretCode) {
         this.secretCode = secretCode;
+    }
+    
+    @Indexed
+    public int getNumber() {
+        return number;
+    }
+    
+    @Indexed
+    public boolean getBool() {
+        return bool;
+    }
+    
+    @Indexed
+    public float getValue() {
+        return value;
+    }
+    
+    @Indexed(name="date", boost=4F)
+    public Date getNow() {
+        return now;
     }
     
     public static void main(final String[] args) throws SearchableException {

@@ -3,6 +3,7 @@ package net.mojodna.searchable;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Date;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
@@ -70,34 +71,55 @@ public class BeanIndexer extends AbstractIndexer {
         // TODO handle Dates and primitives
         // Dates *must* be handled as keywords and can/should be passed into
         // Lucene as Date objects (rather than String representations).
-        // Numbers and Booleans (and their primitive forms) should probably be
-        // handled as keywords as well
         
         final Method readMethod = descriptor.getReadMethod();
         for ( final Class annotationClass : annotations ) {
             if ( null != readMethod && readMethod.isAnnotationPresent( annotationClass ) ) {
                 String fieldname = descriptor.getName();
+
                 try {
-                    final String value = PropertyUtils.getProperty( bean, descriptor.getName() ).toString();
-                    
-                    final Annotation annotation = readMethod.getAnnotation( annotationClass );
-                    if ( annotation instanceof Searchable.Indexed ) {
-                        final Searchable.Indexed i = (Searchable.Indexed) annotation;
+                    if ( descriptor.getPropertyType().equals( Date.class ) ) {
+                        final Date value = (Date) PropertyUtils.getProperty( bean, descriptor.getName() );
+                        float boost = 1F;
                         
-                        if ( StringUtils.isNotBlank( i.name() ) )
-                            fieldname = i.name();
-
-                        final Field field = new Field( fieldname, value, i.stored(), true, i.tokenized(), i.storeTermVector() );
-                        field.setBoost( i.boost() );
-                        doc.add( field );
-                    } else if ( annotation instanceof Searchable.Stored ) {
-                        final Searchable.Stored s = (Searchable.Stored) annotation;
+                        final Annotation annotation = readMethod.getAnnotation( annotationClass );
+                        if ( annotation instanceof Searchable.Indexed ) {
+                            final Searchable.Indexed i = (Searchable.Indexed) annotation;
+                            if ( StringUtils.isNotBlank( i.name() ) )
+                                fieldname = i.name();
+                            
+                            boost = i.boost();
+                        } else if ( annotation instanceof Searchable.Stored ) {
+                            final Searchable.Stored s = (Searchable.Stored) annotation;
+                            if ( StringUtils.isNotBlank( s.name() ) )
+                                fieldname = s.name();
+                        }
                         
-                        if ( StringUtils.isNotBlank( s.name() ) )
-                            fieldname = s.name();
-
-                        final Field field = new Field( fieldname, value, true, false, false );
+                        final Field field = Field.Keyword( fieldname, value );
+                        field.setBoost( boost );
                         doc.add( field );
+                    } else {
+                        final String value = PropertyUtils.getProperty( bean, descriptor.getName() ).toString();
+                        
+                        final Annotation annotation = readMethod.getAnnotation( annotationClass );
+                        if ( annotation instanceof Searchable.Indexed ) {
+                            final Searchable.Indexed i = (Searchable.Indexed) annotation;
+                            
+                            if ( StringUtils.isNotBlank( i.name() ) )
+                                fieldname = i.name();
+                            
+                            final Field field = new Field( fieldname, value, i.stored(), true, i.tokenized(), i.storeTermVector() );
+                            field.setBoost( i.boost() );
+                            doc.add( field );
+                        } else if ( annotation instanceof Searchable.Stored ) {
+                            final Searchable.Stored s = (Searchable.Stored) annotation;
+                            
+                            if ( StringUtils.isNotBlank( s.name() ) )
+                                fieldname = s.name();
+                            
+                            final Field field = new Field( fieldname, value, true, false, false );
+                            doc.add( field );
+                        }
                     }
                 }
                 catch (final Exception e) {
