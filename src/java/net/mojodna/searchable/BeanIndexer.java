@@ -4,6 +4,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Date;
+import java.util.Stack;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
@@ -20,16 +21,7 @@ public class BeanIndexer extends AbstractIndexer {
         // process a Searchable
         final Document doc = createDocument( getType( bean ), getId( bean ) );
         
-        // iterate through fields
-        for ( final PropertyDescriptor descriptor : PropertyUtils.getPropertyDescriptors( bean ) ) {
-            if ( !containsAnnotations( descriptor ) )
-                continue;
-
-            final String fieldName = descriptor.getName();
-
-            log.debug("Indexing property " + fieldName );
-            addFields( doc, bean, descriptor );
-        }
+        processBean( doc, bean );
         
         save( doc );
     }
@@ -67,56 +59,93 @@ public class BeanIndexer extends AbstractIndexer {
         return false;
     }
     
-    private Document addFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor) throws IndexingException {
-        // TODO handle Dates and primitives
-        // Dates *must* be handled as keywords and can/should be passed into
-        // Lucene as Date objects (rather than String representations).
+    private String getFieldname(final PropertyDescriptor descriptor, final Stack stack) {
+        String fieldname = descriptor.getName();
         
+        for ( final Class annotationClass : annotations ) {
+            final Annotation annotation = descriptor.getReadMethod().getAnnotation( annotationClass );
+            if ( annotation instanceof Searchable.Indexed ) {
+                final Searchable.Indexed i = (Searchable.Indexed) annotation;
+                if ( StringUtils.isNotBlank( i.name() ) )
+                    fieldname = i.name();
+            } else if ( annotation instanceof Searchable.Stored ) {
+                final Searchable.Stored s = (Searchable.Stored) annotation;
+                if ( StringUtils.isNotBlank( s.name() ) )
+                    fieldname = s.name();
+            }
+        }
+        
+        if ( !stack.isEmpty() )
+            fieldname = stack.peek() + "." + fieldname;
+        
+        return fieldname;
+    }
+    
+    private Document processBean(final Document doc, final Searchable bean) throws IndexingException {
+        return processBean( doc, bean, new Stack() );
+    }
+    
+    private Document processBean(final Document doc, final Searchable bean, final Stack stack) throws IndexingException {
+        // iterate through fields
+        for ( final PropertyDescriptor d : PropertyUtils.getPropertyDescriptors( bean ) ) {
+            if ( !containsAnnotations( d ) )
+                continue;
+
+            log.debug("Indexing property " + getFieldname( d, stack ) );
+            addFields( doc, bean, d, stack );
+        }
+        return doc;
+    }
+    
+    private Document addFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack stack) throws IndexingException {
         final Method readMethod = descriptor.getReadMethod();
         for ( final Class annotationClass : annotations ) {
             if ( null != readMethod && readMethod.isAnnotationPresent( annotationClass ) ) {
                 String fieldname = descriptor.getName();
+                fieldname = getFieldname( descriptor, stack );
 
                 try {
                     if ( descriptor.getPropertyType().equals( Date.class ) ) {
+                        // handle Dates specially
                         final Date value = (Date) PropertyUtils.getProperty( bean, descriptor.getName() );
-                        float boost = 1F;
+                        float boost = DEFAULT_BOOST_VALUE;
+                        
+                        if ( null == value )
+                            continue;
                         
                         final Annotation annotation = readMethod.getAnnotation( annotationClass );
                         if ( annotation instanceof Searchable.Indexed ) {
                             final Searchable.Indexed i = (Searchable.Indexed) annotation;
-                            if ( StringUtils.isNotBlank( i.name() ) )
-                                fieldname = i.name();
-                            
                             boost = i.boost();
-                        } else if ( annotation instanceof Searchable.Stored ) {
-                            final Searchable.Stored s = (Searchable.Stored) annotation;
-                            if ( StringUtils.isNotBlank( s.name() ) )
-                                fieldname = s.name();
                         }
                         
                         final Field field = Field.Keyword( fieldname, value );
                         field.setBoost( boost );
                         doc.add( field );
+                    } else if ( Searchable.class.isAssignableFrom( descriptor.getPropertyType() ) ) {
+                        // nested Searchables
+                        stack.push( fieldname );
+                        
+                        final Searchable value = (Searchable) PropertyUtils.getProperty( bean, descriptor.getName() );
+                        if ( null != value )
+                            processBean( doc, value, stack );
+                        
+                        stack.pop();
                     } else {
-                        final String value = PropertyUtils.getProperty( bean, descriptor.getName() ).toString();
+                        final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
+                        if ( null == prop )
+                            continue;
+                        
+                        final String value = prop.toString();
                         
                         final Annotation annotation = readMethod.getAnnotation( annotationClass );
                         if ( annotation instanceof Searchable.Indexed ) {
                             final Searchable.Indexed i = (Searchable.Indexed) annotation;
                             
-                            if ( StringUtils.isNotBlank( i.name() ) )
-                                fieldname = i.name();
-                            
                             final Field field = new Field( fieldname, value, i.stored(), true, i.tokenized(), i.storeTermVector() );
                             field.setBoost( i.boost() );
                             doc.add( field );
                         } else if ( annotation instanceof Searchable.Stored ) {
-                            final Searchable.Stored s = (Searchable.Stored) annotation;
-                            
-                            if ( StringUtils.isNotBlank( s.name() ) )
-                                fieldname = s.name();
-                            
                             final Field field = new Field( fieldname, value, true, false, false );
                             doc.add( field );
                         }

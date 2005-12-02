@@ -15,6 +15,7 @@ public abstract class IndexSupport {
     private static final Logger log = Logger.getLogger( IndexSupport.class );
     
     public static final String DEFAULT_INDEX_PATH = System.getProperty("java.io.tmpdir") + File.separatorChar + "lucene";
+    public static final float DEFAULT_BOOST_VALUE = 1F;
     public static final String ID_FIELD_NAME = "_id";
     public static final String ID_TYPE_FIELD_NAME = "_id-type";
     public static final String TYPE_FIELD_NAME = "_type";

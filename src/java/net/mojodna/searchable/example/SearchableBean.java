@@ -17,6 +17,7 @@ public class SearchableBean extends AbstractSearchable implements Searchable {
     private float value = 7.2F;
     private boolean bool = true;
     private Date now = new Date();
+    private NestedSearchableBean nest = new NestedSearchableBean();
     
     /**
      * As there is no "id" property, an alternative must be specified. Store
@@ -87,6 +88,21 @@ public class SearchableBean extends AbstractSearchable implements Searchable {
     @Indexed(name="date", boost=4F)
     public Date getNow() {
         return now;
+    }
+    
+    @Indexed
+    public NestedSearchableBean getNest() {
+        return nest;
+    }
+    
+    @Indexed
+    public NestedSearchableBean getOtherNest() {
+        return null;
+    }
+    
+    @Indexed
+    public Date getNullDate() {
+        return null;
     }
     
     public static void main(final String[] args) throws SearchableException {
