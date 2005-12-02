@@ -38,7 +38,7 @@ public class BeanIndexer extends AbstractIndexer {
      * property annotated with Searchable.ID.  If none are available, it
      * falls back to the "id" field (if present).
      */
-    private Object getId(final Searchable bean) throws IndexingException {
+    protected Object getId(final Searchable bean) throws IndexingException {
         try {
             return PropertyUtils.getProperty( bean, SearchableBeanUtils.getIdPropertyName( bean ) );
         } catch (final Exception e) {
@@ -46,7 +46,7 @@ public class BeanIndexer extends AbstractIndexer {
         }
     }
     
-    private String getType(final Searchable bean) {
+    protected String getType(final Searchable bean) {
         return bean.getClass().getName();
     }
     
@@ -81,7 +81,7 @@ public class BeanIndexer extends AbstractIndexer {
         return fieldname;
     }
     
-    private Document processBean(final Document doc, final Searchable bean) throws IndexingException {
+    protected Document processBean(final Document doc, final Searchable bean) throws IndexingException {
         return processBean( doc, bean, new Stack() );
     }
     
