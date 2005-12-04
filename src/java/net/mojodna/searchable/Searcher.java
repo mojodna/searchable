@@ -16,6 +16,7 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Hits;
@@ -31,18 +32,12 @@ public class Searcher extends IndexSupport {
         }
     }
     
-    /**
-     * Search query interface.
-     */
-    public List<Result> search(final String _query) throws SearchException {
+    public List<Result> search(final Query query) throws SearchException {
         IndexSearcher searcher = null;
         try {
-            // "description" as a default field means little here
-            final Query query = QueryParser.parse(_query, "description", getAnalyzer() );
             searcher = new IndexSearcher( getIndexPath() );
 
             final Hits hits = searcher.search(query);
-            log.debug("Found " + hits.length() + " document(s) that matched query '" + _query + "':");
 
             final List<Result> results = new LinkedList<Result>();
 
@@ -53,10 +48,17 @@ public class Searcher extends IndexSupport {
                 final String className = doc.get( TYPE_FIELD_NAME );
                 log.debug("Creating new instance of: " + className);
                 try {
-                    final Object o = Class.forName(className).newInstance();
-                    if ( o instanceof Searchable ) {
-                        result = (Result) o;
-                        final String idField = SearchableBeanUtils.getIdPropertyName( (Searchable) o );
+                    try {
+                        final Object o = Class.forName(className).newInstance();
+                        if ( o instanceof Result )
+                            result = (Result) o;
+                    }
+                    catch (final ClassNotFoundException e) {
+                        result = new GenericResult();
+                    }
+                    if ( result instanceof Searchable ) {
+                        // special handling for searchables
+                        final String idField = SearchableBeanUtils.getIdPropertyName( (Searchable) result );
                         
                         final Map storedFields = new HashMap();
                         final Enumeration fields = doc.fields();
@@ -83,12 +85,11 @@ public class Searcher extends IndexSupport {
                             log.warn("Id value was null.");
                         }
                     } else {
-                        result = new GenericResult();
+                        final GenericResult gr = new GenericResult();
+                        gr.setId( doc.get( ID_FIELD_NAME ) );
+                        gr.setType( doc.get( TYPE_FIELD_NAME ) );
+                        result = gr;
                     }
-                }
-                catch (final ClassNotFoundException e) {
-                    log.debug("Apparently " + className + " is not a class.");
-                    result = new GenericResult();
                 }
                 catch (final Exception e) {
                     throw new SearchException("Could not reconstitute resultant object.", e );
@@ -102,9 +103,6 @@ public class Searcher extends IndexSupport {
 
             return results;
         }
-        catch (final ParseException e) {
-            throw new SearchException( e );
-        }
         catch (final IOException e) {
             throw new SearchException( e );
         }
@@ -115,6 +113,44 @@ public class Searcher extends IndexSupport {
             }
             catch (final IOException e) {
                 throw new SearchException("Unable to close searcher.", e );
+            }
+        }
+    }
+    
+    /**
+     * Search query interface.
+     */
+    public List<Result> search(final String _query) throws SearchException {
+        try {
+            // "description" as a default field means little here
+            final Query query = QueryParser.parse(_query, "description", getAnalyzer() );
+            final List<Result> results = search( query );
+            
+            log.debug("Found " + results.size() + " document(s) that matched query '" + _query + "':");
+            
+            return results;
+        }
+        catch (final ParseException e) {
+            throw new SearchException( e );
+        }
+    }
+    
+    protected boolean isFieldPresent(final String field) throws IndexException {
+        IndexReader reader = null;
+        try {
+            reader = IndexReader.open( getIndexPath() );
+            return reader.getFieldNames( true ).contains( field );
+        }
+        catch (final IOException e) {
+            throw new IndexException( e );
+        }
+        finally {
+            try {
+            if ( null != reader )
+                reader.close();
+            }
+            catch (final IOException e) {
+                throw new IndexException("Unable to close reader.", e );
             }
         }
     }
