@@ -6,6 +6,8 @@ import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.Stack;
 
+import net.mojodna.searchable.util.AnnotationUtils;
+
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -52,10 +54,12 @@ public class BeanIndexer extends AbstractIndexer {
     
     private boolean containsAnnotations(final PropertyDescriptor descriptor) {
         final Method readMethod = descriptor.getReadMethod();
+        
         for ( final Class annotationClass : annotations ) {
-            if ( null != readMethod && readMethod.isAnnotationPresent( annotationClass ) )
+            if ( AnnotationUtils.isAnnotationPresent( readMethod, annotationClass ) )
                 return true;
         }
+        
         return false;
     }
     

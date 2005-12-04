@@ -106,7 +106,7 @@ public class SearchableBean extends AbstractResult implements Searchable {
     }
     
     public static void main(final String[] args) throws SearchableException {
-        final SearchableBean bean = new SearchableBean();
+        final SearchableBean bean = new SearchableBeanSubclass();
         bean.setName("Seth Fitzsimmons");
         bean.setBio("Seth likes to kayak a lot.");
         bean.setSecretCode("grothfuss");
