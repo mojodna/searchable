@@ -1,6 +1,6 @@
 package net.mojodna.searchable;
 
-public class SearchException extends SearchableException {
+public class SearchException extends IndexException {
     private static final long serialVersionUID = 1L;
 
     public SearchException() {
