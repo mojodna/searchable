@@ -46,12 +46,16 @@ public class Searcher extends IndexSupport {
                 Result result = null;
                 
                 final String className = doc.get( TYPE_FIELD_NAME );
-                log.debug("Creating new instance of: " + className);
                 try {
                     try {
-                        final Object o = Class.forName(className).newInstance();
-                        if ( o instanceof Result )
-                            result = (Result) o;
+                        if ( null != className ) {
+                            log.debug("Creating new instance of: " + className);
+                            final Object o = Class.forName( className ).newInstance();
+                            if ( o instanceof Result )
+                                result = (Result) o;
+                        } else {
+                            result = new GenericResult();
+                        }
                     }
                     catch (final ClassNotFoundException e) {
                         result = new GenericResult();
