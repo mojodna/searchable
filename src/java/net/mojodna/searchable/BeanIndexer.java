@@ -67,7 +67,7 @@ public class BeanIndexer extends AbstractIndexer {
         String fieldname = descriptor.getName();
         
         for ( final Class annotationClass : annotations ) {
-            final Annotation annotation = descriptor.getReadMethod().getAnnotation( annotationClass );
+            final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
             if ( annotation instanceof Searchable.Indexed ) {
                 final Searchable.Indexed i = (Searchable.Indexed) annotation;
                 if ( StringUtils.isNotBlank( i.name() ) )
@@ -92,10 +92,10 @@ public class BeanIndexer extends AbstractIndexer {
     private Document processBean(final Document doc, final Searchable bean, final Stack stack) throws IndexingException {
         // iterate through fields
         for ( final PropertyDescriptor d : PropertyUtils.getPropertyDescriptors( bean ) ) {
-            if ( !containsAnnotations( d ) )
+            if ( !containsAnnotations( d ) ) {
                 continue;
+            }
 
-            log.debug("Indexing property " + getFieldname( d, stack ) );
             addFields( doc, bean, d, stack );
         }
         return doc;
@@ -104,45 +104,40 @@ public class BeanIndexer extends AbstractIndexer {
     private Document addFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack stack) throws IndexingException {
         final Method readMethod = descriptor.getReadMethod();
         for ( final Class annotationClass : annotations ) {
-            if ( null != readMethod && readMethod.isAnnotationPresent( annotationClass ) ) {
+            if ( null != readMethod && AnnotationUtils.isAnnotationPresent( readMethod, annotationClass ) ) {
                 String fieldname = descriptor.getName();
                 fieldname = getFieldname( descriptor, stack );
+                log.debug("Indexing " + descriptor.getName() + " as " + fieldname );
 
                 try {
-                    if ( descriptor.getPropertyType().equals( Date.class ) ) {
+                    final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
+                    if ( null == prop )
+                        continue;
+                    
+                    if ( prop instanceof Date ) {
                         // handle Dates specially
-                        final Date value = (Date) PropertyUtils.getProperty( bean, descriptor.getName() );
                         float boost = DEFAULT_BOOST_VALUE;
                         
-                        if ( null == value )
-                            continue;
-                        
-                        final Annotation annotation = readMethod.getAnnotation( annotationClass );
+                        final Annotation annotation = AnnotationUtils.getAnnotation( readMethod, annotationClass );
                         if ( annotation instanceof Searchable.Indexed ) {
                             final Searchable.Indexed i = (Searchable.Indexed) annotation;
                             boost = i.boost();
                         }
                         
-                        final Field field = Field.Keyword( fieldname, value );
+                        final Field field = Field.Keyword( fieldname, (Date) prop );
                         field.setBoost( boost );
                         doc.add( field );
-                    } else if ( Searchable.class.isAssignableFrom( descriptor.getPropertyType() ) ) {
+                    } else if ( prop instanceof Searchable  ) {
                         // nested Searchables
                         stack.push( fieldname );
                         
-                        final Searchable value = (Searchable) PropertyUtils.getProperty( bean, descriptor.getName() );
-                        if ( null != value )
-                            processBean( doc, value, stack );
+                        processBean( doc, (Searchable) prop, stack );
                         
                         stack.pop();
                     } else {
-                        final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
-                        if ( null == prop )
-                            continue;
-                        
                         final String value = prop.toString();
                         
-                        final Annotation annotation = readMethod.getAnnotation( annotationClass );
+                        final Annotation annotation = AnnotationUtils.getAnnotation( readMethod, annotationClass );
                         if ( annotation instanceof Searchable.Indexed ) {
                             final Searchable.Indexed i = (Searchable.Indexed) annotation;
                             
