@@ -16,7 +16,8 @@ public class AnnotationUtils {
      * 
      * This differs from AnnotatedElement.getAnnotations() in that it looks up
      * the class hierarchy for inherited annotations.  (@Inherit only applies
-     * to class-level annotations.)
+     * to class-level annotations.)  It also checks declarations within
+     * interfaces.
      * 
      * @see java.lang.reflect.AnnotatedElement#getAnnotations()
      * 
@@ -30,6 +31,17 @@ public class AnnotationUtils {
         
         Class clazz = method.getDeclaringClass();
         
+        // check implemented interfaces
+        for ( final Class iface : clazz.getInterfaces() ) {
+            try {
+                final Method m = iface.getMethod( method.getName(), (Class[]) method.getParameterTypes() );
+                if ( m.isAnnotationPresent( annotation ) )
+                    return true;
+            }
+            catch (final NoSuchMethodException e) {}
+        }
+        
+        // check all declarations, in this class or in superclasses
         while ( null != clazz ) {
             try {
                 final Method m = clazz.getMethod( method.getName(), (Class[]) method.getParameterTypes() );

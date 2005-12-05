@@ -8,7 +8,7 @@ import net.mojodna.searchable.BeanIndexer;
 import net.mojodna.searchable.Searchable;
 import net.mojodna.searchable.SearchableException;
 
-public class SearchableBean extends AbstractResult implements Searchable {
+public class SearchableBean extends AbstractResult implements Bean, Searchable {
     private UUID uuid;
     private String name;
     private String bio;
@@ -103,6 +103,14 @@ public class SearchableBean extends AbstractResult implements Searchable {
     @Indexed
     public Date getNullDate() {
         return null;
+    }
+    
+    public String getGreen() {
+        return "green";
+    }
+    
+    public String getWax() {
+        return "wax";
     }
     
     public static void main(final String[] args) throws SearchableException {
