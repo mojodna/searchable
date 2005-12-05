@@ -49,10 +49,13 @@ public class Searcher extends IndexSupport {
                 try {
                     try {
                         if ( null != className ) {
-                            log.debug("Creating new instance of: " + className);
                             final Object o = Class.forName( className ).newInstance();
-                            if ( o instanceof Result )
+                            if ( o instanceof Result ) {
+                                log.debug("Created new instance of: " + className);
                                 result = (Result) o;
+                            } else {
+                                result = new GenericResult();
+                            }
                         } else {
                             result = new GenericResult();
                         }
