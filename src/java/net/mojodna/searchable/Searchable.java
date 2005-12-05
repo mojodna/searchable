@@ -1,7 +1,6 @@
 package net.mojodna.searchable;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -18,7 +17,6 @@ public interface Searchable extends Result {
      */
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
-    @Inherited
     public @interface ID {
         boolean value() default true;
     }
@@ -33,7 +31,6 @@ public interface Searchable extends Result {
      */
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
-    @Inherited
     public @interface Indexed {
         float boost() default 1.0F;
         String name() default "";
@@ -49,7 +46,6 @@ public interface Searchable extends Result {
      */
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
-    @Inherited
     public @interface Stored {
         String name() default "";
         boolean value() default true;
