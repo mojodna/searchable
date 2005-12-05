@@ -16,7 +16,7 @@ limitations under the License.
 
 <project name="Searchable" default="jar">
     <!-- Java compilation options -->
-    <property name="compile.debug" value="false" />
+    <property name="compile.debug" value="true" />
     <property name="compile.deprecation" value="true" />
     <property name="compile.optimize" value="true" />
 
@@ -33,7 +33,7 @@ limitations under the License.
 
     <!-- application information -->
     <property name="app.name" value="searchable" />
-    <property name="app.version" value="0.2.0" />
+    <property name="app.version" value="0.2.1" />
 
     <!-- The base directory for distribution targets -->
     <property name="dist.dir" value="dist/" />
