@@ -7,7 +7,7 @@ public class NestedSearchableBean extends AbstractResult implements Searchable {
     private String hello = "world";
     private String empty;
     
-    @Indexed
+    @Indexed(nested=false)
     public String getHello() {
         return hello;
     }

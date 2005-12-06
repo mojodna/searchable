@@ -85,6 +85,21 @@ public class BeanIndexer extends AbstractIndexer {
         return fieldname;
     }
     
+    private boolean isNested(final PropertyDescriptor descriptor) {
+        for ( final Class annotationClass : annotations ) {
+            final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
+            if ( annotation instanceof Searchable.Indexed ) {
+                final Searchable.Indexed i = (Searchable.Indexed) annotation;
+                return i.nested();
+            } else if ( annotation instanceof Searchable.Stored ) {
+                final Searchable.Stored s = (Searchable.Stored) annotation;
+                return s.nested();
+            }
+        }
+        
+        return false;
+    }
+    
     protected Document processBean(final Document doc, final Searchable bean) throws IndexingException {
         return processBean( doc, bean, new Stack() );
     }
@@ -105,8 +120,13 @@ public class BeanIndexer extends AbstractIndexer {
         final Method readMethod = descriptor.getReadMethod();
         for ( final Class annotationClass : annotations ) {
             if ( null != readMethod && AnnotationUtils.isAnnotationPresent( readMethod, annotationClass ) ) {
-                String fieldname = descriptor.getName();
-                fieldname = getFieldname( descriptor, stack );
+                
+                // don't index elements marked as nested=false in a nested context
+                if ( !stack.isEmpty() && !isNested( descriptor ) ) {
+                    continue;
+                }
+
+                final String fieldname = getFieldname( descriptor, stack );
                 log.debug("Indexing " + descriptor.getName() + " as " + fieldname );
 
                 try {
