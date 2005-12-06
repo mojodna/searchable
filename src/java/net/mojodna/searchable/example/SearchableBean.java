@@ -114,15 +114,22 @@ public class SearchableBean extends AbstractResult implements Bean, Searchable {
     }
     
     public static void main(final String[] args) throws SearchableException {
+        final BeanIndexer bi = new BeanIndexer();
+        bi.initialize( true );
+
         final SearchableBean bean = new SearchableBeanSubclass();
         bean.setName("Seth Fitzsimmons");
         bean.setBio("Seth likes to kayak a lot.");
         bean.setSecretCode("grothfuss");
         bean.setUUID( UUID.randomUUID() );
-        
-        final BeanIndexer bi = new BeanIndexer();
-        bi.initialize( true );
         bi.add( bean );
+        
+        bean.setName("Phil Jacob");
+        bean.setBio("Phil likes fashion.");
+        bean.setSecretCode("grothfuss");
+        bean.setUUID( UUID.randomUUID() );
+        bi.add( bean );
+        
         bi.close();
     }
 }
