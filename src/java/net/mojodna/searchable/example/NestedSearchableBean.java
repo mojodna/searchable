@@ -12,7 +12,7 @@ public class NestedSearchableBean extends AbstractResult implements Searchable {
         return hello;
     }
     
-    @Indexed
+    @Indexed(aliases={"blank","nil"})
     public String getEmpty() {
         return empty;
     }

@@ -34,6 +34,7 @@ public interface Searchable extends Result {
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Indexed {
+        String[] aliases() default {};
         float boost() default 1.0F;
         String name() default "";
         boolean nested() default true;
@@ -51,6 +52,7 @@ public interface Searchable extends Result {
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Stored {
+        String[] aliases() default {};
         String name() default "";
         boolean nested() default true;
         boolean value() default true;

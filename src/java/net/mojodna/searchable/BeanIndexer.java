@@ -3,7 +3,10 @@ package net.mojodna.searchable;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.Stack;
 
 import net.mojodna.searchable.util.AnnotationUtils;
@@ -67,7 +70,9 @@ public class BeanIndexer extends AbstractIndexer {
         return false;
     }
     
-    private String getFieldname(final PropertyDescriptor descriptor, final Stack stack) {
+    private Collection<String> getFieldnames(final PropertyDescriptor descriptor, final Stack stack) {
+        final Collection<String> fieldnames = new LinkedList();
+        
         String fieldname = descriptor.getName();
         
         for ( final Class annotationClass : annotations ) {
@@ -76,17 +81,31 @@ public class BeanIndexer extends AbstractIndexer {
                 final Searchable.Indexed i = (Searchable.Indexed) annotation;
                 if ( StringUtils.isNotBlank( i.name() ) )
                     fieldname = i.name();
+                
+                // add any aliases
+                fieldnames.addAll( Arrays.asList( i.aliases() ) );
             } else if ( annotation instanceof Searchable.Stored ) {
                 final Searchable.Stored s = (Searchable.Stored) annotation;
                 if ( StringUtils.isNotBlank( s.name() ) )
                     fieldname = s.name();
+                
+                // add any aliases
+                fieldnames.addAll( Arrays.asList( s.aliases() ) );
             }
         }
         
-        if ( !stack.isEmpty() )
-            fieldname = stack.peek() + "." + fieldname;
+        // add the default field name
+        fieldnames.add( fieldname );
         
-        return fieldname;
+        final Collection<String> prefixedFieldnames = new LinkedList();
+        for (final String name : fieldnames ) {
+            if ( !stack.isEmpty() )
+                prefixedFieldnames.add( stack.peek() + "." + name );
+            else
+                prefixedFieldnames.add( name );
+        }
+        
+        return prefixedFieldnames;
     }
     
     private boolean isNested(final PropertyDescriptor descriptor) {
@@ -104,23 +123,39 @@ public class BeanIndexer extends AbstractIndexer {
         return false;
     }
     
+    private float getBoost(final PropertyDescriptor descriptor) {
+        for ( final Class annotationClass : annotations ) {
+            final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
+            if ( annotation instanceof Searchable.Indexed ) {
+                final Searchable.Indexed i = (Searchable.Indexed) annotation;
+                return i.boost();
+            }
+        }
+        
+        return DEFAULT_BOOST_VALUE;
+    }
+    
     protected Document processBean(final Document doc, final Searchable bean) throws IndexingException {
         return processBean( doc, bean, new Stack() );
     }
     
     private Document processBean(final Document doc, final Searchable bean, final Stack stack) throws IndexingException {
+        return processBean( doc, bean, stack, DEFAULT_BOOST_VALUE );
+    }
+    
+    private Document processBean(final Document doc, final Searchable bean, final Stack stack, final float boost) throws IndexingException {
         // iterate through fields
         for ( final PropertyDescriptor d : PropertyUtils.getPropertyDescriptors( bean ) ) {
             if ( !containsAnnotations( d ) ) {
                 continue;
             }
 
-            addFields( doc, bean, d, stack );
+            addFields( doc, bean, d, stack, boost );
         }
         return doc;
     }
     
-    private Document addFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack stack) throws IndexingException {
+    private Document addFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack stack, final float inheritedBoost) throws IndexingException {
         final Method readMethod = descriptor.getReadMethod();
         for ( final Class annotationClass : annotations ) {
             if ( null != readMethod && AnnotationUtils.isAnnotationPresent( readMethod, annotationClass ) ) {
@@ -130,52 +165,53 @@ public class BeanIndexer extends AbstractIndexer {
                     continue;
                 }
 
-                final String fieldname = getFieldname( descriptor, stack );
-                log.debug("Indexing " + descriptor.getName() + " as " + fieldname );
-
-                try {
-                    final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
-                    if ( null == prop )
-                        continue;
+                for (final String fieldname : getFieldnames( descriptor, stack ) ) {
+                    log.debug("Indexing " + descriptor.getName() + " as " + fieldname );
                     
-                    if ( prop instanceof Date ) {
-                        // handle Dates specially
-                        float boost = DEFAULT_BOOST_VALUE;
+                    try {
+                        final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
+                        if ( null == prop )
+                            continue;
                         
-                        final Annotation annotation = AnnotationUtils.getAnnotation( readMethod, annotationClass );
-                        if ( annotation instanceof Searchable.Indexed ) {
-                            final Searchable.Indexed i = (Searchable.Indexed) annotation;
-                            boost = i.boost();
-                        }
-                        
-                        final Field field = Field.Keyword( fieldname, (Date) prop );
-                        field.setBoost( boost );
-                        doc.add( field );
-                    } else if ( prop instanceof Searchable  ) {
-                        // nested Searchables
-                        stack.push( fieldname );
-                        
-                        processBean( doc, (Searchable) prop, stack );
-                        
-                        stack.pop();
-                    } else {
-                        final String value = prop.toString();
-                        
-                        final Annotation annotation = AnnotationUtils.getAnnotation( readMethod, annotationClass );
-                        if ( annotation instanceof Searchable.Indexed ) {
-                            final Searchable.Indexed i = (Searchable.Indexed) annotation;
+                        if ( prop instanceof Date ) {
+                            // handle Dates specially
+                            float boost = DEFAULT_BOOST_VALUE;
                             
-                            final Field field = new Field( fieldname, value, i.stored(), true, i.tokenized(), i.storeTermVector() );
-                            field.setBoost( i.boost() );
+                            final Annotation annotation = AnnotationUtils.getAnnotation( readMethod, annotationClass );
+                            if ( annotation instanceof Searchable.Indexed ) {
+                                final Searchable.Indexed i = (Searchable.Indexed) annotation;
+                                boost = i.boost();
+                            }
+                            
+                            final Field field = Field.Keyword( fieldname, (Date) prop );
+                            field.setBoost( inheritedBoost * boost );
                             doc.add( field );
-                        } else if ( annotation instanceof Searchable.Stored ) {
-                            final Field field = new Field( fieldname, value, true, false, false );
-                            doc.add( field );
+                        } else if ( prop instanceof Searchable  ) {
+                            // nested Searchables
+                            stack.push( fieldname );
+                            
+                            processBean( doc, (Searchable) prop, stack, inheritedBoost * getBoost( descriptor ) );
+                            
+                            stack.pop();
+                        } else {
+                            final String value = prop.toString();
+                            
+                            final Annotation annotation = AnnotationUtils.getAnnotation( readMethod, annotationClass );
+                            if ( annotation instanceof Searchable.Indexed ) {
+                                final Searchable.Indexed i = (Searchable.Indexed) annotation;
+                                
+                                final Field field = new Field( fieldname, value, i.stored(), true, i.tokenized(), i.storeTermVector() );
+                                field.setBoost( inheritedBoost * i.boost() );
+                                doc.add( field );
+                            } else if ( annotation instanceof Searchable.Stored ) {
+                                final Field field = new Field( fieldname, value, true, false, false );
+                                doc.add( field );
+                            }
                         }
                     }
-                }
-                catch (final Exception e) {
-                    throw new IndexingException("Unable to index bean.", e );
+                    catch (final Exception e) {
+                        throw new IndexingException("Unable to index bean.", e );
+                    }
                 }
             }
         }
