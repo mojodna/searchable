@@ -12,6 +12,10 @@ import org.apache.lucene.index.Term;
 public abstract class AbstractIndexer extends IndexSupport {
     private static final Logger log = Logger.getLogger( AbstractIndexer.class );
     
+    public AbstractIndexer() throws IndexException {
+        super();
+    }
+    
     /**
      * Subclass this class and call this method with an appropriate value for
      * type if you wish to index non-Searchables.
@@ -35,7 +39,7 @@ public abstract class AbstractIndexer extends IndexSupport {
         
         IndexWriter writer = null;
         try {
-            writer = new IndexWriter( getIndexPath(), getAnalyzer(), false );
+            writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), false );
             log.debug("Writing document to index.");
             writer.addDocument( document );
         }
@@ -63,7 +67,7 @@ public abstract class AbstractIndexer extends IndexSupport {
         log.debug("Deleting document.");
         IndexReader reader = null;
         try {
-            reader = IndexReader.open( getIndexPath() );
+            reader = IndexReader.open( getIndexDirectory() );
             reader.delete( new Term( COMPOUND_ID_FIELD_NAME, type + "-" + id ) );
         }
         catch (final IOException e) {

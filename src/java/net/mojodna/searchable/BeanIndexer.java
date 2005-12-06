@@ -19,6 +19,10 @@ public class BeanIndexer extends AbstractIndexer {
     
     private static final Class[] annotations = { Searchable.Indexed.class, Searchable.Stored.class };
     
+    public BeanIndexer() throws IndexException {
+        super();
+    }
+    
     public void add(final Searchable bean) throws IndexingException {
         // process a Searchable
         final Document doc = createDocument( getType( bean ), getId( bean ) );

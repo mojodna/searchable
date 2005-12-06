@@ -22,6 +22,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.store.RAMDirectory;
 
 public class Searcher extends IndexSupport {
     private static final Logger log = Logger.getLogger( Searcher.class );
@@ -32,10 +33,14 @@ public class Searcher extends IndexSupport {
         }
     }
     
+    public Searcher() throws IndexException {
+        super();
+    }
+    
     public List<Result> search(final Query query) throws SearchException {
         IndexSearcher searcher = null;
         try {
-            searcher = new IndexSearcher( getIndexPath() );
+            searcher = new IndexSearcher( new RAMDirectory( getIndexDirectory() ) );
 
             final Hits hits = searcher.search(query);
 
@@ -128,6 +133,7 @@ public class Searcher extends IndexSupport {
      * Search query interface.
      */
     public List<Result> search(final String _query) throws SearchException {
+        // TODO attempt to load the list of default fields via annotations
         try {
             // "description" as a default field means little here
             final Query query = QueryParser.parse(_query, "description", getAnalyzer() );
@@ -145,7 +151,7 @@ public class Searcher extends IndexSupport {
     protected boolean isFieldPresent(final String field) throws IndexException {
         IndexReader reader = null;
         try {
-            reader = IndexReader.open( getIndexPath() );
+            reader = IndexReader.open( getIndexDirectory() );
             return reader.getFieldNames( true ).contains( field );
         }
         catch (final IOException e) {

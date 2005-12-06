@@ -10,6 +10,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 
 public abstract class IndexSupport {
     private static final Logger log = Logger.getLogger( IndexSupport.class );
@@ -23,14 +25,39 @@ public abstract class IndexSupport {
     protected static final Collection PRIVATE_FIELD_NAMES = Arrays.asList( new String[] { ID_FIELD_NAME, ID_TYPE_FIELD_NAME, TYPE_FIELD_NAME, COMPOUND_ID_FIELD_NAME } );
     
     private Analyzer analyzer = new StandardAnalyzer();
-    private String indexPath = DEFAULT_INDEX_PATH;
+    private Directory indexDirectory;
 
-    public String getIndexPath() {
-        return indexPath;
+    public IndexSupport() throws IndexException {
+        setIndexPath( DEFAULT_INDEX_PATH );
     }
     
-    public void setIndexPath(final String indexPath) {
-        this.indexPath = indexPath;
+    public String getIndexPath() {
+        if ( getIndexDirectory() instanceof FSDirectory )
+            return ((FSDirectory) getIndexDirectory()).getFile().getAbsolutePath();
+        else
+            return "<memory>";
+    }
+    
+    public void setIndexPath(final String indexPath) throws IndexException {
+        final File indexFile = new File( indexPath );
+        if ( !indexFile.exists() ) {
+            indexFile.mkdirs();
+        }
+        
+        try {
+            setIndexDirectory( FSDirectory.getDirectory( indexFile, false ) );
+        }
+        catch (final IOException e) {
+            throw new IndexException( e );
+        }
+    }
+    
+    protected Directory getIndexDirectory() {
+        return indexDirectory;
+    }
+    
+    protected void setIndexDirectory(final Directory indexDirectory) {
+        this.indexDirectory = indexDirectory;
     }
     
     public Analyzer getAnalyzer() {
@@ -54,7 +81,7 @@ public abstract class IndexSupport {
                 createIndex();
             
             // attempt to open an IndexReader
-            reader = IndexReader.open( getIndexPath() );
+            reader = IndexReader.open( getIndexDirectory() );
         }
         catch (final IOException e) {
             log.debug("Could not open index: " + e.getMessage() );
@@ -78,15 +105,9 @@ public abstract class IndexSupport {
      * Create a new Lucene index, creating directories if necessary.
      */
     public void createIndex() throws IndexException {
-        final File index = new File( getIndexPath() );
-        if ( !index.exists() ) {
-            log.info( getIndexPath() + " does not exist; creating.");
-            index.mkdirs();
-        }
-        
         IndexWriter writer = null;
         try {
-            writer = new IndexWriter( getIndexPath(), getAnalyzer(), true );
+            writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), true );
         }
         catch (final IOException e) {
             log.error("Could not create index: " + e.getMessage(), e);
@@ -115,7 +136,7 @@ public abstract class IndexSupport {
     protected void optimizeIndex() throws IndexException {
         IndexWriter writer = null;
         try {
-            writer = new IndexWriter( getIndexPath(), getAnalyzer(), false );
+            writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), false );
             writer.optimize();
         }
         catch (final IOException e) {
