@@ -58,7 +58,7 @@ public class Searcher extends IndexSupport {
                 numResults = hits.length();
             
             rs.setOffset( offset );
-            rs.setCount( numResults );
+            rs.setCount( count );
             
             for (int i = offset; i < numResults; i++) {
                 final Document doc = hits.doc(i);
