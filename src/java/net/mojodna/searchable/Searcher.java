@@ -49,7 +49,7 @@ public class Searcher extends IndexSupport {
             final Hits hits = searcher.search(query);
 
             final List<Result> results = new LinkedList<Result>();
-            final ResultSet rs = new ResultSet( hits.length() );
+            final ResultSetImpl rs = new ResultSetImpl( hits.length() );
 
             final int numResults;
             if ( null != count )
@@ -58,7 +58,7 @@ public class Searcher extends IndexSupport {
                 numResults = hits.length();
             
             rs.setOffset( offset );
-            rs.setCount( count );
+            rs.setCount( numResults );
             
             for (int i = offset; i < numResults; i++) {
                 final Document doc = hits.doc(i);
