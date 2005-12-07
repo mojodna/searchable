@@ -46,6 +46,10 @@ public class ResultSet implements Iterable<Result> {
 		this.size = size;
 	}
 	
+	public boolean isEmpty() {
+		return results.isEmpty();
+	}
+	
 	public Iterator<Result> iterator() {
 		return results.iterator();
 	}
