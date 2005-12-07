@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Iterator;
 
 public class ResultSetImpl implements ResultSet {
-	private int count;
 	private int offset;
 	private Collection<Result> results;
 	private int size;
@@ -19,11 +18,7 @@ public class ResultSetImpl implements ResultSet {
 	}
 	
 	public int count() {
-		return count;
-	}
-	
-	void setCount(final int count) {
-		this.count = count;
+		return results.size();
 	}
 	
 	public int offset() {
