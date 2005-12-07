@@ -37,11 +37,11 @@ public class Searcher extends IndexSupport {
         super();
     }
     
-    public List<Result> search(final Query query) throws SearchException {
+    public ResultSet search(final Query query) throws SearchException {
         return search( query, 0, null );
     }
     
-    public List<Result> search(final Query query, final Integer offset, final Integer count) throws SearchException {
+    public ResultSet search(final Query query, final Integer offset, final Integer count) throws SearchException {
         IndexSearcher searcher = null;
         try {
             searcher = new IndexSearcher( new RAMDirectory( getIndexDirectory() ) );
@@ -49,12 +49,16 @@ public class Searcher extends IndexSupport {
             final Hits hits = searcher.search(query);
 
             final List<Result> results = new LinkedList<Result>();
+            final ResultSet rs = new ResultSet( hits.length() );
 
             final int numResults;
             if ( null != count )
                 numResults = Math.min( offset + count, hits.length() );
             else
                 numResults = hits.length();
+            
+            rs.setOffset( offset );
+            rs.setCount( numResults );
             
             for (int i = offset; i < numResults; i++) {
                 final Document doc = hits.doc(i);
@@ -123,7 +127,8 @@ public class Searcher extends IndexSupport {
                 results.add( result );
             }
 
-            return results;
+            rs.setResults( results );
+            return rs;
         }
         catch (final IOException e) {
             throw new SearchException( e );
@@ -142,16 +147,16 @@ public class Searcher extends IndexSupport {
     /**
      * Search query interface.
      */
-    public List<Result> search(final String _query) throws SearchException {
+    public ResultSet search(final String _query) throws SearchException {
         return search( _query, 0, null );
     }
     
-    public List<Result> search(final String _query, final Integer offset, final Integer count)  throws SearchException {
+    public ResultSet search(final String _query, final Integer offset, final Integer count)  throws SearchException {
         // TODO attempt to load the list of default fields via annotations
         try {
             // "description" as a default field means little here
             final Query query = QueryParser.parse(_query, "description", getAnalyzer() );
-            final List<Result> results = search( query, offset, count );
+            final ResultSet results = search( query, offset, count );
             
             log.debug("Found " + results.size() + " document(s) that matched query '" + _query + "':");
             
@@ -185,13 +190,13 @@ public class Searcher extends IndexSupport {
     public static void main(final String[] args) throws Exception {
         final Searcher s = new Searcher();
         // final List<Result> results = s.search("bio:kayak");
-        final List<Result> results = s.search("green:green", 1, 2);
+        final ResultSet results = s.search("green:green", 1, 2);
         log.debug( results );
         for ( final Result result : results ) {
             log.debug("Score: " + result.getScore() );
             log.debug("Stored fields: " + result.getStoredFields() );
             // to test UUIDConverter
-            log.debug("UUID: " + ((SearchableBean) results.get(0)).getUUID() );
+            log.debug("UUID: " + ((SearchableBean) result).getUUID() );
         }
     }
 }
