@@ -13,6 +13,7 @@ import net.mojodna.searchable.example.SearchableBean;
 
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -22,6 +23,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.RAMDirectory;
 
 public class Searcher extends IndexSupport {
@@ -42,11 +44,31 @@ public class Searcher extends IndexSupport {
     }
     
     public ResultSet search(final Query query, final Integer offset, final Integer count) throws SearchException {
+        return search( query, offset, count, Sort.RELEVANCE );
+    }
+    
+    // TODO add support for String[] sortFields
+    public ResultSet search(final Query query, final Integer offset, final Integer count, final String sortField) throws SearchException {
+        Sort sort = Sort.RELEVANCE;
+        if ( StringUtils.isNotBlank( sortField )) 
+            sort = new Sort( IndexSupport.SORTABLE_PREFIX + sortField );
+        return search( query, offset, count, sort );
+    }
+
+    public ResultSet search(final Query query, final Integer offset, final Integer count, final String sortField, final boolean reverse) throws SearchException {
+        Sort sort = Sort.RELEVANCE;
+        if ( StringUtils.isNotBlank( sortField )) 
+            sort = new Sort( IndexSupport.SORTABLE_PREFIX + sortField, reverse );
+
+        return search( query, offset, count, sort );
+    }
+    
+    protected ResultSet search(final Query query, final Integer offset, final Integer count, final Sort sort) throws SearchException {
         IndexSearcher searcher = null;
         try {
             searcher = new IndexSearcher( new RAMDirectory( getIndexDirectory() ) );
 
-            final Hits hits = searcher.search(query);
+            final Hits hits = searcher.search(query, sort);
 
             final List<Result> results = new LinkedList<Result>();
             final ResultSetImpl rs = new ResultSetImpl( hits.length() );
@@ -90,7 +112,7 @@ public class Searcher extends IndexSupport {
                         while (fields.hasMoreElements()) {
                             final Field f = (Field) fields.nextElement();
                             // exclude private fields
-                            if ( !PRIVATE_FIELD_NAMES.contains( f.name() ) )
+                            if ( !PRIVATE_FIELD_NAMES.contains( f.name() ) && !f.name().startsWith( IndexSupport.SORTABLE_PREFIX ) )
                                 storedFields.put( f.name(), f.stringValue() );
                         }
                         result.setStoredFields( storedFields );
@@ -146,16 +168,28 @@ public class Searcher extends IndexSupport {
     /**
      * Search query interface.
      */
-    public ResultSet search(final String _query) throws SearchException {
-        return search( _query, 0, null );
+    public ResultSet search(final String query) throws SearchException {
+        return search( query, 0, null, null );
+    }
+
+    public ResultSet search(final String query, final String sortField) throws SearchException {
+        return search( query, 0, null, sortField );
     }
     
-    public ResultSet search(final String _query, final Integer offset, final Integer count)  throws SearchException {
+    public ResultSet search(final String query, final Integer offset, final Integer count)  throws SearchException {
+        return search( query, offset, count, null );
+    }
+    
+    public ResultSet search(final String query, final Integer offset, final Integer count, final String sortField)  throws SearchException {
+        return search( query, offset, count, sortField, false );
+    }
+    
+    public ResultSet search(final String _query, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws SearchException {
         // TODO attempt to load the list of default fields via annotations
         try {
             // "description" as a default field means little here
             final Query query = QueryParser.parse(_query, "description", getAnalyzer() );
-            final ResultSet results = search( query, offset, count );
+            final ResultSet results = search( query, offset, count, sortField, reverse );
             
             log.debug("Found " + results.size() + " document(s) that matched query '" + _query + "':");
             
@@ -189,7 +223,7 @@ public class Searcher extends IndexSupport {
     public static void main(final String[] args) throws Exception {
         final Searcher s = new Searcher();
         // final List<Result> results = s.search("bio:kayak");
-        final ResultSet results = s.search("green:green", 1, 2);
+        final ResultSet results = s.search("green:mold", 0, 2, "name", true);
         log.debug( results );
         for ( final Result result : results ) {
             log.debug("Score: " + result.getScore() );

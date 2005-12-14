@@ -38,7 +38,7 @@ public class SearchableBean extends AbstractResult implements Bean, Searchable {
      * Index this property as "name" (default), don't tokenize it (it'll act
      * like a Keyword field), and set a boost value of 2.
      */
-    @Indexed(boost=2F, tokenized=false)
+    @Indexed(boost=2F, tokenized=false, stored=true)
     @Sortable
     public String getName() {
         return name;
