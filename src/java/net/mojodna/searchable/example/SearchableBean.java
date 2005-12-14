@@ -25,6 +25,7 @@ public class SearchableBean extends AbstractResult implements Bean, Searchable {
      */
     @ID
     @Stored(name="bean-id")
+    @Sortable(name="unique-id")
     public UUID getUUID() {
         return uuid;
     }
@@ -38,6 +39,7 @@ public class SearchableBean extends AbstractResult implements Bean, Searchable {
      * like a Keyword field), and set a boost value of 2.
      */
     @Indexed(boost=2F, tokenized=false)
+    @Sortable
     public String getName() {
         return name;
     }

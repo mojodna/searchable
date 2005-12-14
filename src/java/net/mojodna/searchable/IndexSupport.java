@@ -22,6 +22,7 @@ public abstract class IndexSupport {
     public static final String ID_TYPE_FIELD_NAME = "_id-type";
     public static final String TYPE_FIELD_NAME = "_type";
     public static final String COMPOUND_ID_FIELD_NAME = "_cid";
+    public static final String SORTABLE_PREFIX = "_sort-";
     protected static final Collection PRIVATE_FIELD_NAMES = Arrays.asList( new String[] { ID_FIELD_NAME, ID_TYPE_FIELD_NAME, TYPE_FIELD_NAME, COMPOUND_ID_FIELD_NAME } );
     
     private Analyzer analyzer = new StandardAnalyzer();

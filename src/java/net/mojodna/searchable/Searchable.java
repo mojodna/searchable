@@ -57,4 +57,11 @@ public interface Searchable extends Result {
         boolean nested() default true;
         boolean value() default true;
     }
+    
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Sortable {
+        String name() default "";
+        boolean nested() default false;
+    }
 }

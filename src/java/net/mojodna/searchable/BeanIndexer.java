@@ -9,6 +9,9 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.Stack;
 
+import net.mojodna.searchable.Searchable.Indexed;
+import net.mojodna.searchable.Searchable.Sortable;
+import net.mojodna.searchable.Searchable.Stored;
 import net.mojodna.searchable.util.AnnotationUtils;
 
 import org.apache.commons.beanutils.PropertyUtils;
@@ -20,7 +23,7 @@ import org.apache.lucene.document.Field;
 public class BeanIndexer extends AbstractIndexer {
     private static final Logger log = Logger.getLogger( BeanIndexer.class );
     
-    private static final Class[] annotations = { Searchable.Indexed.class, Searchable.Stored.class };
+    private static final Class[] annotations = { Indexed.class, Stored.class };
     
     public BeanIndexer() throws IndexException {
         super();
@@ -70,7 +73,21 @@ public class BeanIndexer extends AbstractIndexer {
         return false;
     }
     
-    private Collection<String> getFieldnames(final PropertyDescriptor descriptor, final Stack stack) {
+    private String getFieldname(final String fieldname, final Stack<String> stack) {
+        if ( !stack.isEmpty() ) {
+            final StringBuffer sb = new StringBuffer();
+            for ( final String component : stack ) {
+                sb.append( component )
+                  .append(".");
+            }
+            sb.append( fieldname );
+            return sb.toString();
+        } else {
+            return fieldname;
+        }
+    }
+    
+    private Collection<String> getFieldnames(final PropertyDescriptor descriptor, final Stack<String> stack) {
         final Collection<String> fieldnames = new LinkedList();
         
         String fieldname = descriptor.getName();
@@ -99,10 +116,7 @@ public class BeanIndexer extends AbstractIndexer {
         
         final Collection<String> prefixedFieldnames = new LinkedList();
         for (final String name : fieldnames ) {
-            if ( !stack.isEmpty() )
-                prefixedFieldnames.add( stack.peek() + "." + name );
-            else
-                prefixedFieldnames.add( name );
+            prefixedFieldnames.add( getFieldname( name, stack ) );
         }
         
         return prefixedFieldnames;
@@ -111,11 +125,14 @@ public class BeanIndexer extends AbstractIndexer {
     private boolean isNested(final PropertyDescriptor descriptor) {
         for ( final Class annotationClass : annotations ) {
             final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
-            if ( annotation instanceof Searchable.Indexed ) {
-                final Searchable.Indexed i = (Searchable.Indexed) annotation;
+            if ( annotation instanceof Indexed ) {
+                final Indexed i = (Indexed) annotation;
                 return i.nested();
-            } else if ( annotation instanceof Searchable.Stored ) {
-                final Searchable.Stored s = (Searchable.Stored) annotation;
+            } else if ( annotation instanceof Stored ) {
+                final Stored s = (Stored) annotation;
+                return s.nested();
+            } else if ( annotation instanceof Sortable ) {
+                final Sortable s = (Sortable) annotation;
                 return s.nested();
             }
         }
@@ -139,11 +156,11 @@ public class BeanIndexer extends AbstractIndexer {
         return processBean( doc, bean, new Stack() );
     }
     
-    private Document processBean(final Document doc, final Searchable bean, final Stack stack) throws IndexingException {
+    private Document processBean(final Document doc, final Searchable bean, final Stack<String> stack) throws IndexingException {
         return processBean( doc, bean, stack, DEFAULT_BOOST_VALUE );
     }
     
-    private Document processBean(final Document doc, final Searchable bean, final Stack stack, final float boost) throws IndexingException {
+    private Document processBean(final Document doc, final Searchable bean, final Stack<String> stack, final float boost) throws IndexingException {
         // iterate through fields
         for ( final PropertyDescriptor d : PropertyUtils.getPropertyDescriptors( bean ) ) {
             if ( !containsAnnotations( d ) ) {
@@ -151,11 +168,12 @@ public class BeanIndexer extends AbstractIndexer {
             }
 
             addFields( doc, bean, d, stack, boost );
+            addSortableFields( doc, bean, d, stack );
         }
         return doc;
     }
     
-    private Document addFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack stack, final float inheritedBoost) throws IndexingException {
+    private Document addFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack<String> stack, final float inheritedBoost) throws IndexingException {
         final Method readMethod = descriptor.getReadMethod();
         for ( final Class annotationClass : annotations ) {
             if ( null != readMethod && AnnotationUtils.isAnnotationPresent( readMethod, annotationClass ) ) {
@@ -213,6 +231,43 @@ public class BeanIndexer extends AbstractIndexer {
                         throw new IndexingException("Unable to index bean.", e );
                     }
                 }
+            }
+        }
+        
+        return doc;
+    }
+    
+    private Document addSortableFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack<String> stack) throws IndexingException {
+        final Method readMethod = descriptor.getReadMethod();
+        if ( null != readMethod && AnnotationUtils.isAnnotationPresent( readMethod, Sortable.class ) ) {
+            
+            // don't index elements marked as nested=false in a nested context
+            if ( !stack.isEmpty() && !isNested( descriptor ) ) {
+                return doc;
+            }
+
+            String fieldname = descriptor.getName();
+            final Sortable annotation = (Sortable) AnnotationUtils.getAnnotation( readMethod, Sortable.class );
+            if ( StringUtils.isNotBlank( annotation.name() ) )
+                fieldname = annotation.name();
+            
+            log.debug("Indexing " + descriptor.getName() + " as sortable (" + fieldname + ")." );
+            
+            try {
+                final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
+                if ( null == prop )
+                    return doc;
+                
+                if ( prop instanceof Date ) {
+                    // handle Dates specially
+                    doc.add( Field.Keyword( SORTABLE_PREFIX + fieldname, (Date) prop ) );
+                } else {
+                    final String value = prop.toString();
+                    doc.add( Field.Keyword( SORTABLE_PREFIX + fieldname, value ) );
+                }
+            }
+            catch (final Exception e) {
+                throw new IndexingException("Unable to index bean.", e );
             }
         }
         
