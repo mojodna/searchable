@@ -1,18 +1,19 @@
 package net.mojodna.searchable;
 
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 public class ResultSetImpl implements ResultSet {
 	private int offset;
-	private Collection<Result> results;
+	private List<Result> results = new LinkedList();
 	private int size;
 	
-	ResultSetImpl() {
+	public ResultSetImpl() {
 		super();
 	}
 	
-	ResultSetImpl(final int size) {
+	public ResultSetImpl(final int size) {
 		super();
 		setSize( size );
 	}
@@ -25,15 +26,19 @@ public class ResultSetImpl implements ResultSet {
 		return offset;
 	}
 	
-	void setOffset(final int offset) {
+	public void setOffset(final int offset) {
 		this.offset = offset;
 	}
 	
-	public Collection<Result> getResults() {
+	public List<Result> getResults() {
 		return results;
 	}
 	
-	void setResults(final Collection<Result> results) {
+    public void add(final Result result) {
+        results.add( result );
+    }
+    
+	public void setResults(final List<Result> results) {
 		this.results = results;
 	}
 	
@@ -41,7 +46,7 @@ public class ResultSetImpl implements ResultSet {
 		return size;
 	}
 	
-	void setSize(final int size) {
+	public void setSize(final int size) {
 		this.size = size;
 	}
 	
