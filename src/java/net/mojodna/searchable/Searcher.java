@@ -235,6 +235,26 @@ public class Searcher extends IndexSupport {
         }
     }
     
+    protected Document getDocument(final int id) throws IndexException {
+        IndexReader reader = null;
+        try {
+            reader = IndexReader.open( getIndexDirectory() );
+            return reader.document( id );
+        }
+        catch (final IOException e) {
+            throw new IndexException( e );
+        }
+        finally {
+            try {
+            if ( null != reader )
+                reader.close();
+            }
+            catch (final IOException e) {
+                throw new IndexException("Unable to close reader.", e );
+            }
+        }
+    }
+    
     public static void main(final String[] args) throws Exception {
         final Searcher s = new Searcher();
         // final List<Result> results = s.search("bio:kayak");
