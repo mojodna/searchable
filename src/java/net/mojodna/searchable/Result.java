@@ -18,6 +18,7 @@ package net.mojodna.searchable;
 import java.util.Map;
 
 public interface Result {
+    // TODO add documentId?
     public float getScore();
     public void setScore(float score);
     public Map<String,String> getStoredFields();
