@@ -39,6 +39,7 @@ public abstract class IndexSupport {
     public static final String COMPOUND_ID_FIELD_NAME = "_cid";
     public static final String SORTABLE_PREFIX = "_sort-";
     protected static final Collection PRIVATE_FIELD_NAMES = Arrays.asList( new String[] { ID_FIELD_NAME, ID_TYPE_FIELD_NAME, TYPE_FIELD_NAME, COMPOUND_ID_FIELD_NAME } );
+    protected static Object writeLock = new Object();
     
     private Analyzer analyzer = new StandardAnalyzer();
     private Directory indexDirectory;
@@ -90,28 +91,30 @@ public abstract class IndexSupport {
     
     public void initialize(final boolean createIndex) throws IndexException {
         log.info("Initializing index at " + getIndexPath() );
-        IndexReader reader = null;
-        try {
-            // (re-)create the index if requested
-            if ( createIndex )
+        synchronized ( writeLock ) {
+            IndexReader reader = null;
+            try {
+                // (re-)create the index if requested
+                if ( createIndex )
+                    createIndex();
+                
+                // attempt to open an IndexReader
+                reader = IndexReader.open( getIndexDirectory() );
+            }
+            catch (final IOException e) {
+                log.debug("Could not open index: " + e.getMessage() );
+                // attempt to create the index, as it appears to not exist
                 createIndex();
-            
-            // attempt to open an IndexReader
-            reader = IndexReader.open( getIndexDirectory() );
-        }
-        catch (final IOException e) {
-            log.debug("Could not open index: " + e.getMessage() );
-            // attempt to create the index, as it appears to not exist
-            createIndex();
-        }
-        finally {
-            if ( null != reader ) {
-                try {
-                    reader.close();
-                }
-                catch (final IOException e) {
-                    log.warn("Could not close index: " + e.getMessage(), e);
-                    throw new IndexException( "Unable to initialize index.", e );
+            }
+            finally {
+                if ( null != reader ) {
+                    try {
+                        reader.close();
+                    }
+                    catch (final IOException e) {
+                        log.warn("Could not close index: " + e.getMessage(), e);
+                        throw new IndexException( "Unable to initialize index.", e );
+                    }
                 }
             }
         }
@@ -121,22 +124,24 @@ public abstract class IndexSupport {
      * Create a new Lucene index, creating directories if necessary.
      */
     public void createIndex() throws IndexException {
-        IndexWriter writer = null;
-        try {
-            writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), true );
-        }
-        catch (final IOException e) {
-            log.error("Could not create index: " + e.getMessage(), e);
-            throw new IndexException( "Unable to create index.", e );
-        }
-        finally {
-            if ( null != writer ) {
-                try {
-                    writer.close();
-                }
-                catch (final IOException e) {
-                    log.warn("Could not close index: " + e.getMessage(), e);
-                    throw new IndexException( "Unable to create index.", e );
+        synchronized ( writeLock ) {
+            IndexWriter writer = null;
+            try {
+                writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), true );
+            }
+            catch (final IOException e) {
+                log.error("Could not create index: " + e.getMessage(), e);
+                throw new IndexException( "Unable to create index.", e );
+            }
+            finally {
+                if ( null != writer ) {
+                    try {
+                        writer.close();
+                    }
+                    catch (final IOException e) {
+                        log.warn("Could not close index: " + e.getMessage(), e);
+                        throw new IndexException( "Unable to create index.", e );
+                    }
                 }
             }
         }
@@ -150,23 +155,25 @@ public abstract class IndexSupport {
      * Optimize the active index.
      */
     protected void optimizeIndex() throws IndexException {
-        IndexWriter writer = null;
-        try {
-            writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), false );
-            writer.optimize();
-        }
-        catch (final IOException e) {
-            log.error("Could not optimize index: " + e.getMessage(), e);
-            throw new IndexException( "Unable to optimize index.", e );
-        }
-        finally {
-            if ( null != writer ) {
-                try {
-                    writer.close();
-                }
-                catch (final IOException e) {
-                    log.warn("Could not close index: " + e.getMessage(), e);
-                    throw new IndexException( "Unable to optimize index.", e );
+        synchronized ( writeLock ) {
+            IndexWriter writer = null;
+            try {
+                writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), false );
+                writer.optimize();
+            }
+            catch (final IOException e) {
+                log.error("Could not optimize index: " + e.getMessage(), e);
+                throw new IndexException( "Unable to optimize index.", e );
+            }
+            finally {
+                if ( null != writer ) {
+                    try {
+                        writer.close();
+                    }
+                    catch (final IOException e) {
+                        log.warn("Could not close index: " + e.getMessage(), e);
+                        throw new IndexException( "Unable to optimize index.", e );
+                    }
                 }
             }
         }

@@ -52,25 +52,27 @@ public abstract class AbstractIndexer extends IndexSupport {
         if ( null != document.get( TYPE_FIELD_NAME ) && null != document.get( ID_FIELD_NAME ) )
             delete( document.get( TYPE_FIELD_NAME ), document.get( ID_FIELD_NAME ) );
         
-        IndexWriter writer = null;
-        try {
-            writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), false );
-            log.debug("Writing document to index.");
-            writer.addDocument( document );
-        }
-        catch (final IOException e) {
-            log.error("Could not open index: " + e.getMessage(), e);
-            throw new IndexingException( "Unable to commit document to index.", e );
-        }
-        finally {
+        synchronized ( writeLock ) {
+            IndexWriter writer = null;
             try {
-                if ( null != writer ) {
-                    writer.close();
-                }
+                writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), false );
+                log.debug("Writing document to index.");
+                writer.addDocument( document );
             }
             catch (final IOException e) {
-                log.warn("Could not close index: " + e.getMessage(), e);
+                log.error("Could not open index: " + e.getMessage(), e);
                 throw new IndexingException( "Unable to commit document to index.", e );
+            }
+            finally {
+                try {
+                    if ( null != writer ) {
+                        writer.close();
+                    }
+                }
+                catch (final IOException e) {
+                    log.warn("Could not close index: " + e.getMessage(), e);
+                    throw new IndexingException( "Unable to commit document to index.", e );
+                }
             }
         }
     }
@@ -80,24 +82,26 @@ public abstract class AbstractIndexer extends IndexSupport {
      */
     protected void delete(final String type, final Object id) throws IndexingException {
         log.debug("Deleting document.");
-        IndexReader reader = null;
-        try {
-            reader = IndexReader.open( getIndexDirectory() );
-            reader.delete( new Term( COMPOUND_ID_FIELD_NAME, type + "-" + id ) );
-        }
-        catch (final IOException e) {
-            log.error("Could not open index: " + e.getMessage(), e);
-            throw new IndexingException( "Unable to delete document.", e );
-        }
-        finally {
+        synchronized ( writeLock ) {
+            IndexReader reader = null;
             try {
-                if ( null != reader ) {
-                    reader.close();
-                }
+                reader = IndexReader.open( getIndexDirectory() );
+                reader.delete( new Term( COMPOUND_ID_FIELD_NAME, type + "-" + id ) );
             }
             catch (final IOException e) {
-                log.warn("Could not close index: " + e.getMessage(), e);
+                log.error("Could not open index: " + e.getMessage(), e);
                 throw new IndexingException( "Unable to delete document.", e );
+            }
+            finally {
+                try {
+                    if ( null != reader ) {
+                        reader.close();
+                    }
+                }
+                catch (final IOException e) {
+                    log.warn("Could not close index: " + e.getMessage(), e);
+                    throw new IndexingException( "Unable to delete document.", e );
+                }
             }
         }
     }
