@@ -18,11 +18,11 @@ package net.mojodna.searchable;
 import java.util.Iterator;
 import java.util.List;
 
-public interface ResultSet extends Iterable<Result> {
+public interface ResultSet<E extends Result> extends Iterable<E> {
 	public int count();
 	public int offset();
-	public List<Result> getResults();
+	public List<E> getResults();
 	public int size();
 	public boolean isEmpty();
-	public Iterator<Result> iterator();
+	public Iterator<E> iterator();
 }

@@ -258,7 +258,7 @@ public class Searcher extends IndexSupport {
     public static void main(final String[] args) throws Exception {
         final Searcher s = new Searcher();
         // final List<Result> results = s.search("bio:kayak");
-        final ResultSet results = s.search("green:mold", 0, 2, "name", true);
+        final ResultSet<Result> results = s.search("green:mold", 0, 2, "name", true);
         log.debug( results );
         for ( final Result result : results ) {
             log.debug("Score: " + result.getScore() );
