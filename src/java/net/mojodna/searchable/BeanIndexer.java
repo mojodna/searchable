@@ -175,6 +175,11 @@ public class BeanIndexer extends AbstractIndexer {
         return false;
     }
 
+    private boolean isIndexed(final PropertyDescriptor descriptor) {
+        return ( null != AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Indexed.class ) ); 
+    }
+
+    
     private boolean isStored(final PropertyDescriptor descriptor) {
         for ( final Class annotationClass : annotations ) {
             final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
@@ -211,13 +216,13 @@ public class BeanIndexer extends AbstractIndexer {
                 continue;
             }
 
-            addFields( doc, bean, d, stack, boost );
+            addBeanFields( doc, bean, d, stack, boost );
             addSortableFields( doc, bean, d, stack );
         }
         return doc;
     }
     
-    private Document addFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack<String> stack, final float inheritedBoost) throws IndexingException {
+    private Document addBeanFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack<String> stack, final float inheritedBoost) throws IndexingException {
         final Method readMethod = descriptor.getReadMethod();
         for ( final Class annotationClass : annotations ) {
             if ( null != readMethod && AnnotationUtils.isAnnotationPresent( readMethod, annotationClass ) ) {
@@ -283,7 +288,7 @@ public class BeanIndexer extends AbstractIndexer {
             final String value = prop.toString();
             float boost = getBoost( descriptor );
 
-            final Field field = new Field( fieldname, value, isStored( descriptor ), true, isTokenized( descriptor ), isVectorized( descriptor ) );
+            final Field field = new Field( fieldname, value, isStored( descriptor ), isIndexed( descriptor ), isTokenized( descriptor ), isVectorized( descriptor ) );
             field.setBoost( inheritedBoost * boost );
             doc.add( field );
         }
