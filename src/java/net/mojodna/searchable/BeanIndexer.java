@@ -167,6 +167,35 @@ public class BeanIndexer extends AbstractIndexer {
         return DEFAULT_BOOST_VALUE;
     }
     
+    private boolean isTokenized(final PropertyDescriptor descriptor) {
+        final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Indexed.class );
+        if ( null != annotation ) {
+            return ((Searchable.Indexed) annotation).tokenized();
+        }
+        return false;
+    }
+
+    private boolean isStored(final PropertyDescriptor descriptor) {
+        for ( final Class annotationClass : annotations ) {
+            final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
+            if ( annotation instanceof Searchable.Indexed ) {
+                return ((Searchable.Indexed) annotation).stored();
+            } else if ( annotation instanceof Searchable.Stored ) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private boolean isVectorized(final PropertyDescriptor descriptor) {
+        final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Indexed.class );
+        if ( null != annotation ) {
+            return ((Searchable.Indexed) annotation).storeTermVector();
+        }
+        return false;
+    }
+    
     protected Document processBean(final Document doc, final Searchable bean) throws IndexingException {
         return processBean( doc, bean, new Stack() );
     }
@@ -206,47 +235,57 @@ public class BeanIndexer extends AbstractIndexer {
                         if ( null == prop )
                             continue;
                         
-                        if ( prop instanceof Date ) {
-                            // handle Dates specially
-                            float boost = DEFAULT_BOOST_VALUE;
-                            
-                            final Annotation annotation = AnnotationUtils.getAnnotation( readMethod, annotationClass );
-                            if ( annotation instanceof Searchable.Indexed ) {
-                                final Searchable.Indexed i = (Searchable.Indexed) annotation;
-                                boost = i.boost();
-                            }
-                            
-                            final Field field = Field.Keyword( fieldname, (Date) prop );
-                            field.setBoost( inheritedBoost * boost );
-                            doc.add( field );
-                        } else if ( prop instanceof Searchable  ) {
-                            // nested Searchables
-                            stack.push( fieldname );
-                            
-                            processBean( doc, (Searchable) prop, stack, inheritedBoost * getBoost( descriptor ) );
-                            
-                            stack.pop();
-                        } else {
-                            final String value = prop.toString();
-                            
-                            final Annotation annotation = AnnotationUtils.getAnnotation( readMethod, annotationClass );
-                            if ( annotation instanceof Searchable.Indexed ) {
-                                final Searchable.Indexed i = (Searchable.Indexed) annotation;
-                                
-                                final Field field = new Field( fieldname, value, i.stored(), true, i.tokenized(), i.storeTermVector() );
-                                field.setBoost( inheritedBoost * i.boost() );
-                                doc.add( field );
-                            } else if ( annotation instanceof Searchable.Stored ) {
-                                final Field field = new Field( fieldname, value, true, false, false );
-                                doc.add( field );
-                            }
-                        }
+                        addFields( doc, fieldname, prop, descriptor, stack, inheritedBoost );
+                    }
+                    catch (final IndexingException e) {
+                        throw e;
                     }
                     catch (final Exception e) {
                         throw new IndexingException("Unable to index bean.", e );
                     }
                 }
             }
+        }
+        
+        return doc;
+    }
+    
+    private Document addFields(final Document doc, final String fieldname, final Object prop, final PropertyDescriptor descriptor, final Stack<String> stack, final float inheritedBoost) throws IndexingException {
+        if ( prop instanceof Date ) {
+            // handle Dates specially
+            float boost = getBoost( descriptor );
+            
+            final Field field = Field.Keyword( fieldname, (Date) prop );
+            field.setBoost( inheritedBoost * boost );
+            doc.add( field );
+        } else if ( prop instanceof Iterable ) {
+            // create multiple fields for things that can be iterated over
+            float boost = getBoost( descriptor );
+            
+            for (final Object o : (Iterable) prop) {
+                addFields( doc, fieldname, o, descriptor, stack, inheritedBoost * boost );
+            }
+        } else if ( prop instanceof Object[] ) {
+            // create multiple fields for arrays of things
+            float boost = getBoost( descriptor );
+            
+            for (final Object o : (Object[]) prop) {
+                addFields( doc, fieldname, o, descriptor, stack, inheritedBoost * boost );
+            }
+        } else if ( prop instanceof Searchable  ) {
+            // nested Searchables
+            stack.push( fieldname );
+            
+            processBean( doc, (Searchable) prop, stack, inheritedBoost * getBoost( descriptor ) );
+            
+            stack.pop();
+        } else {
+            final String value = prop.toString();
+            float boost = getBoost( descriptor );
+
+            final Field field = new Field( fieldname, value, isStored( descriptor ), true, isTokenized( descriptor ), isVectorized( descriptor ) );
+            field.setBoost( inheritedBoost * boost );
+            doc.add( field );
         }
         
         return doc;
