@@ -123,6 +123,10 @@ public class BeanIndexer extends AbstractIndexer {
                 
                 // add any aliases
                 fieldnames.addAll( Arrays.asList( s.aliases() ) );
+            } else if ( annotation instanceof Searchable.Sortable ) {
+                final Searchable.Sortable s = (Sortable) annotation;
+                if ( StringUtils.isNotBlank( s.name() ) )
+                    fieldname = s.name();
             }
         }
         
@@ -279,7 +283,7 @@ public class BeanIndexer extends AbstractIndexer {
             }
         } else if ( prop instanceof Searchable  ) {
             // nested Searchables
-            stack.push( fieldname );
+            stack.push( descriptor.getName() );
             
             processBean( doc, (Searchable) prop, stack, inheritedBoost * getBoost( descriptor ) );
             
@@ -305,28 +309,25 @@ public class BeanIndexer extends AbstractIndexer {
                 return doc;
             }
 
-            String fieldname = descriptor.getName();
-            final Sortable annotation = (Sortable) AnnotationUtils.getAnnotation( readMethod, Sortable.class );
-            if ( StringUtils.isNotBlank( annotation.name() ) )
-                fieldname = annotation.name();
-            
-            log.debug("Indexing " + descriptor.getName() + " as sortable (" + fieldname + ")." );
-            
-            try {
-                final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
-                if ( null == prop )
-                    return doc;
+            for (final String fieldname : getFieldnames( descriptor, stack ) ) {
+                log.debug("Indexing " + descriptor.getName() + " as sortable (" + fieldname + ")." );
                 
-                if ( prop instanceof Date ) {
-                    // handle Dates specially
-                    doc.add( Field.Keyword( SORTABLE_PREFIX + fieldname, (Date) prop ) );
-                } else {
-                    final String value = prop.toString();
-                    doc.add( Field.Keyword( SORTABLE_PREFIX + fieldname, value ) );
+                try {
+                    final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
+                    if ( null == prop )
+                        return doc;
+                    
+                    if ( prop instanceof Date ) {
+                        // handle Dates specially
+                        doc.add( Field.Keyword( SORTABLE_PREFIX + fieldname, (Date) prop ) );
+                    } else {
+                        final String value = prop.toString();
+                        doc.add( Field.Keyword( SORTABLE_PREFIX + fieldname, value ) );
+                    }
                 }
-            }
-            catch (final Exception e) {
-                throw new IndexingException("Unable to index bean.", e );
+                catch (final Exception e) {
+                    throw new IndexingException("Unable to index bean.", e );
+                }
             }
         }
         
