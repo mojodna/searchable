@@ -25,4 +25,6 @@ public interface Result {
     public void setStoredFields(Map<String,String> storedFields);
     public int getRanking();
     public void setRanking(int ranking);
+    public String getSearchExtract();
+    public void setSearchExtract(String extract);
 }

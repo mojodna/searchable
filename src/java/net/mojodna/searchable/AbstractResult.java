@@ -18,6 +18,7 @@ package net.mojodna.searchable;
 import java.util.Map;
 
 public abstract class AbstractResult implements Result {
+    private String extract;
     private int ranking;
     private Map storedFields;
     private float score;
@@ -44,5 +45,13 @@ public abstract class AbstractResult implements Result {
     
     public void setScore(final float score) {
         this.score = score;
+    }
+    
+    public String getSearchExtract() {
+        return extract;
+    }
+    
+    public void setSearchExtract(final String extract) {
+        this.extract = extract;
     }
 }
