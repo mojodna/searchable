@@ -39,28 +39,67 @@ public class AnnotationUtils {
         if ( null == method || null == annotation )
             return null;
 
-        Class clazz = method.getDeclaringClass();
-        
-        final Collection<Class> classesToCheck = new HashSet();
-        while ( null != clazz ) {
-            classesToCheck.add( clazz );
-            
-            // add implemented interfaces to the list of classes to check
-            for ( final Class iface : clazz.getInterfaces() ) {
-                classesToCheck.add( iface );
-            }
-            
-            clazz = clazz.getSuperclass();
-        }
-        
         // check all superclasses and inherited interfaces
-        for ( final Class c : classesToCheck ) {
+        for ( final Class c : AnnotationUtils.getClasses( method.getDeclaringClass() ) ) {
             try {
                 final Method m = c.getMethod( method.getName(), (Class[]) method.getParameterTypes() );
                 if ( m.isAnnotationPresent( annotation ) )
                     return m.getAnnotation( annotation );
             }
             catch (final NoSuchMethodException e) {}
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Get a specific annotation present on a class.
+     * 
+     * This differs from AnnotatedElement.getAnnotation(Annotation) in that it
+     * looks up the class hierarchy for inherited annotations.  (@Inherit only
+     * applies to class-level annotations.)  It also checks declarations within
+     * interfaces.
+     * 
+     * @see java.lang.reflect.AnnotatedElement#getAnnotations()
+     * 
+     * @param clazz Class to check for present annotations.
+     * @param annotation Annotation to look for.
+     * @return Instance of the specified annotation or null if not present.
+     */
+    public static Annotation getAnnotation(Class clazz, final Class<? extends Annotation> annotation) {
+        return getAnnotation( clazz, annotation, false );
+    }
+    
+    /**
+     * Get a specific annotation present on or in a class.
+     * 
+     * This differs from AnnotatedElement.getAnnotation(Annotation) in that it
+     * looks up the class hierarchy for inherited annotations.  (@Inherit only
+     * applies to class-level annotations.)  It also checks declarations within
+     * interfaces.
+     * 
+     * @see java.lang.reflect.AnnotatedElement#getAnnotations()
+     * 
+     * @param clazz Class to check for present annotations.
+     * @param annotation Annotation to look for.
+     * @param includeMethods Whether to include methods when searching.
+     * @return Instance of the specified annotation or null if not present.
+     */
+    public static Annotation getAnnotation(Class clazz, final Class<? extends Annotation> annotation, final boolean includeMethods) {
+        if ( null == clazz || null == annotation )
+            return null;
+        
+        if ( includeMethods ) {
+            for (final Method m : clazz.getMethods() ) {
+                if ( isAnnotationPresent( m, annotation ) )
+                    return getAnnotation( m, annotation );
+            }
+        }
+
+        // check all superclasses and inherited interfaces
+        for ( final Class c : AnnotationUtils.getClasses( clazz ) ) {
+            if ( c.isAnnotationPresent( annotation ) )
+                return c.getAnnotation( annotation );
         }
         
         return null;
@@ -83,5 +122,29 @@ public class AnnotationUtils {
      */
     public static boolean isAnnotationPresent(final Method method, final Class<? extends Annotation> annotation) {
         return ( null != getAnnotation( method, annotation ) ); 
+    }
+
+    /**
+     * Gets a Collection of classes extended and interfaces implemented by the
+     * specified class (including itself).
+     * 
+     * This could be done with ClassUtils, but this is more direct.
+     * 
+     * @param clazz Class to inspect.
+     * @return Collection of classes extended and interfaces implemented.
+     */
+    private static Collection<Class> getClasses(Class clazz) {
+        final Collection<Class> classes = new HashSet();
+        while ( null != clazz ) {
+            classes.add( clazz );
+            
+            // add implemented interfaces to the list of classes to check
+            for ( final Class iface : clazz.getInterfaces() ) {
+                classes.add( iface );
+            }
+            
+            clazz = clazz.getSuperclass();
+        }
+        return classes;
     }
 }
