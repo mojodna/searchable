@@ -79,4 +79,16 @@ public interface Searchable extends Result {
         String name() default "";
         boolean nested() default false;
     }
+    
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface DefaultFields {
+        String[] value() default {};
+    }
+    
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Excerptable {
+        boolean value() default true;
+    }
 }
