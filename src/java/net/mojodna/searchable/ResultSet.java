@@ -18,9 +18,12 @@ package net.mojodna.searchable;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.lucene.search.Query;
+
 public interface ResultSet<E extends Result> extends Iterable<E> {
 	public int count();
 	public int offset();
+    public Query getQuery();
 	public List<E> getResults();
 	public int size();
 	public boolean isEmpty();

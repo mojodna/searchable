@@ -19,8 +19,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.lucene.search.Query;
+
 public class ResultSetImpl implements ResultSet {
 	private int offset;
+    private Query query;
 	private List<Result> results = new LinkedList();
 	private int size;
 	
@@ -44,6 +47,14 @@ public class ResultSetImpl implements ResultSet {
 	public void setOffset(final int offset) {
 		this.offset = offset;
 	}
+    
+    public Query getQuery() {
+        return query;
+    }
+    
+    public void setQuery(final Query query) {
+        this.query = query;
+    }
 	
 	public List<Result> getResults() {
 		return results;
