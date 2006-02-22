@@ -40,8 +40,6 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -196,13 +194,20 @@ public abstract class AbstractSearcher extends IndexSupport {
         }
     }
     
-    protected Result doExcerpt(final String query, final Result result) throws SearchException {
-        try {
-            return doExcerpt( QueryParser.parse( query, "excerpt", getAnalyzer() ), result );
+    /**
+     * Create excerpts using properties specified as @Excerptable.
+     * 
+     * Does not use generics due to casting by subclasses.
+     * 
+     * @param results Results to excerpt.
+     * @return ResultSet containing excerpted entries.
+     * @throws SearchException
+     */
+    protected ResultSet excerpt(final ResultSet results) throws SearchException {
+        for (final Object r : results.getResults() ) {
+            doExcerpt( results.getQuery(), (Result) r );
         }
-        catch (final ParseException e) {
-            throw new SearchException( e );
-        }
+        return results;
     }
     
     protected Result doExcerpt(final Query query, final Result result) throws SearchException {
