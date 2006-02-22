@@ -20,6 +20,11 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
 
+/**
+ * Annotation utility methods.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public class AnnotationUtils {
     /**
      * Get a specific annotation present on a method.

@@ -1,3 +1,18 @@
+/*
+Copyright 2005-2006 Seth Fitzsimmons <seth@note.amherst.edu>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package net.mojodna.searchable.util;
 
 import net.mojodna.searchable.SearchException;
@@ -29,6 +44,16 @@ public abstract class MultiFieldQueryPreparer {
     private static final Logger log = Logger.getLogger( MultiFieldQueryPreparer.class ); 
     private static final String JUNK_FIELD = "org.prx.search.AbstractSearcher.junk";
     
+    /**
+     * Prepare a query as if it were going through the MultiFieldQueryParser in
+     * AND mode.
+     * 
+     * @param query Query to prepare.
+     * @param defaultFields List of default fields.
+     * @param analyzer Analyzer to use.
+     * @return Parsed query.
+     * @throws SearchException
+     */
     public static Query prepareQuery(final String query, final String[] defaultFields, final Analyzer analyzer) throws SearchException {
         final QueryParser qp = new QueryParser( JUNK_FIELD, analyzer );
         qp.setOperator( QueryParser.DEFAULT_OPERATOR_AND );

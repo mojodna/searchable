@@ -15,23 +15,48 @@ limitations under the License.
 */
 package net.mojodna.searchable;
 
-
+/**
+ * A container for generic results.  This is used when an object of the
+ * correct type cannot be instantiated.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public class GenericResult extends AbstractResult implements Result {
     private String id;
     private String type;
 
+    /**
+     * Gets the id of the object corresponding to this result.
+     * 
+     * @return Object id.
+     */
     public String getId() {
         return id;
     }
     
+    /**
+     * Sets the id of the object corresponding to this result.
+     * 
+     * @param id
+     */
     void setId(final String id) {
         this.id = id;
     }
     
+    /**
+     * Gets the type of the object corresponding to this result.
+     * 
+     * @return Object type.
+     */
     public String getType() {
         return type;
     }
     
+    /**
+     * Sets the type of the object corresponding to this result.
+     * 
+     * @param type Object type.
+     */
     void setType(final String type) {
         this.type = type;
     }

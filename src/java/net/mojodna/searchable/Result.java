@@ -17,14 +17,67 @@ package net.mojodna.searchable;
 
 import java.util.Map;
 
+/**
+ * An interface for objects that will be returned as part of a ResultSet.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public interface Result {
     // TODO add documentId?
+    
+    /**
+     * Gets this result's score.
+     * 
+     * @return Score.
+     */
     public float getScore();
+    
+    /**
+     * Sets this result's score.
+     * 
+     * @param score Score.
+     */
     public void setScore(float score);
+    
+    /**
+     * Gets fields that were stored in the index for this result.
+     * 
+     * @return Map containing stored field names and values.
+     */
     public Map<String,String> getStoredFields();
+    
+    /**
+     * Sets fields that were stored in the index for this result.
+     * 
+     * @param storedFields Stored field names and values.
+     */
     public void setStoredFields(Map<String,String> storedFields);
+    
+    /**
+     * Gets this result's ranking in the resultset.
+     * 
+     * @return Ranking.
+     */
     public int getRanking();
+    
+    /**
+     * Sets this result's ranking in the resultset.
+     * 
+     * @param ranking Ranking.
+     */
     public void setRanking(int ranking);
+    
+    /**
+     * Gets this result's search extract.
+     * 
+     * @return Highlighted excerpted field.
+     */
     public String getSearchExtract();
+    
+    /**
+     * Sets this result's search extract.
+     * 
+     * @param extract Highlighted excerpted field.
+     */
     public void setSearchExtract(String extract);
 }

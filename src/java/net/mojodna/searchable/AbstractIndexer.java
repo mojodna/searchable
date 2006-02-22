@@ -24,16 +24,34 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 
+/**
+ * Core methods for adding objects to an index.  This is intended to be
+ * subclassed by a model-specific implementation that provides appropriate
+ * add() methods.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public abstract class AbstractIndexer extends IndexSupport {
     private static final Logger log = Logger.getLogger( AbstractIndexer.class );
     
+    /**
+     * Constructor.
+     * 
+     * @throws IndexException
+     */
     public AbstractIndexer() throws IndexException {
         super();
     }
     
     /**
-     * Subclass this class and call this method with an appropriate value for
-     * type if you wish to index non-Searchables.
+     * Creates a document with searchable-specific properties initialized.
+     * 
+     * Call this method with appropriate values for type if you wish to index
+     * non-Searchables.
+     * 
+     * @param type Type of object being indexed (usually a fully qualified class name).
+     * @id Id of object being indexed.
+     * @return Initialized document.
      */
     protected Document createDocument(final String type, final Object id) {
         log.debug("Creating document with type '" + type + "' and id '" + id + "'.");
@@ -46,6 +64,12 @@ public abstract class AbstractIndexer extends IndexSupport {
         return doc;
     }
     
+    /**
+     * Saves a document to the underlying index.
+     * 
+     * @param document Document to save.
+     * @throws IndexingException
+     */
     protected void save(final Document document) throws IndexingException {
         log.debug("Committing document to index.");
         // delete document if necessary
@@ -78,7 +102,11 @@ public abstract class AbstractIndexer extends IndexSupport {
     }
     
     /**
-     * Delete a document from the index.
+     * Delete a document from the index.  This constructs a Term corresponding
+     * to the compound key.
+     * 
+     * @param type Type of object that was indexed.
+     * @param id Id of document that was indexed.
      */
     protected void delete(final String type, final Object id) throws IndexingException {
         log.debug("Deleting document.");

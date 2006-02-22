@@ -15,24 +15,47 @@ limitations under the License.
 */
 package net.mojodna.searchable;
 
+/**
+ * Root class for all Exceptions thrown by the searchable toolkit.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public abstract class SearchableException extends Exception {
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Basic constructor.
+     */
     public SearchableException() {
         super();
     }
 
+    /**
+     * Constructor with message.
+     * 
+     * @param message Error message.
+     */
     public SearchableException(final String message) {
         super(message);
     }
 
+    /**
+     * Constructor with message and cause.
+     * 
+     * @param message Error message.
+     * @param cause Cause of exception.
+     */
     public SearchableException(final String message, final Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Constructor with cause.
+     * 
+     * @param cause Cause of exception.
+     */
     public SearchableException(final Throwable cause) {
         super(cause);
     }
-
 }
 

@@ -19,6 +19,11 @@ import java.util.UUID;
 
 import org.apache.commons.beanutils.Converter;
 
+/**
+ * A converter for UUIDs.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public class UUIDConverter implements Converter {
     public Object convert(final Class clazz, final Object value) {
         return UUID.fromString( value.toString() );

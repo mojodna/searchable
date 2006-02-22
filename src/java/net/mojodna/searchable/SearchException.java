@@ -15,24 +15,47 @@ limitations under the License.
 */
 package net.mojodna.searchable;
 
+/**
+ * Exception thrown when errors occur during searching.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public class SearchException extends IndexException {
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Basic constructor.
+     */
     public SearchException() {
         super();
     }
 
+    /**
+     * Constructor with message.
+     * 
+     * @param message Error message.
+     */
     public SearchException(final String message) {
         super(message);
     }
 
+    /**
+     * Constructor with message and cause.
+     * 
+     * @param message Error message.
+     * @param cause Cause of exception.
+     */
     public SearchException(final String message, final Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Constructor with cause.
+     * 
+     * @param cause Cause of exception.
+     */
     public SearchException(final Throwable cause) {
         super(cause);
     }
-
 }
 

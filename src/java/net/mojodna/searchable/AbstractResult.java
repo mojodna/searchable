@@ -17,6 +17,12 @@ package net.mojodna.searchable;
 
 import java.util.Map;
 
+/**
+ * An abstract Result class provided as a convenience superclass for classes
+ * that implement Result.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public abstract class AbstractResult implements Result {
     private String extract;
     private int ranking;

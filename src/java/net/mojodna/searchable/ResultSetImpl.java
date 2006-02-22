@@ -15,22 +15,35 @@ limitations under the License.
 */
 package net.mojodna.searchable;
 
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.lucene.search.Query;
 
+/**
+ * Basic implementation of a ResultSet.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public class ResultSetImpl implements ResultSet {
 	private int offset;
     private Query query;
-	private List<Result> results = new LinkedList();
+	private List<? extends Result> results = Collections.EMPTY_LIST;
 	private int size;
 	
+    /**
+     * Basic constructor.
+     */
 	public ResultSetImpl() {
 		super();
 	}
 	
+    /**
+     * Construct with a specified size.
+     * 
+     * @param size Total number of results available.
+     */
 	public ResultSetImpl(final int size) {
 		super();
 		setSize( size );
@@ -44,6 +57,11 @@ public class ResultSetImpl implements ResultSet {
 		return offset;
 	}
 	
+    /**
+     * Sets the offset of the first result in this set.
+     * 
+     * @param offset Offset of the first result in this set.
+     */
 	public void setOffset(final int offset) {
 		this.offset = offset;
 	}
@@ -52,19 +70,25 @@ public class ResultSetImpl implements ResultSet {
         return query;
     }
     
+    /**
+     * Sets the Query that was used to get this set.
+     * 
+     * @param query Query used.
+     */
     public void setQuery(final Query query) {
         this.query = query;
     }
 	
-	public List<Result> getResults() {
+	public List<? extends Result> getResults() {
 		return results;
 	}
 	
-    public void add(final Result result) {
-        results.add( result );
-    }
-    
-	public void setResults(final List<Result> results) {
+    /**
+     * Sets the available results in this set.
+     * 
+     * @param results Available results.
+     */
+	public void setResults(final List<? extends Result> results) {
 		this.results = results;
 	}
 	
@@ -72,6 +96,11 @@ public class ResultSetImpl implements ResultSet {
 		return size;
 	}
 	
+    /**
+     * Sets the total number of available results.
+     * 
+     * @param size Total number of results available.
+     */
 	public void setSize(final int size) {
 		this.size = size;
 	}
@@ -80,7 +109,7 @@ public class ResultSetImpl implements ResultSet {
 		return results.isEmpty();
 	}
 	
-	public Iterator<Result> iterator() {
+	public Iterator<? extends Result> iterator() {
 		return results.iterator();
 	}
 }

@@ -16,15 +16,58 @@ limitations under the License.
 package net.mojodna.searchable;
 
 import java.beans.PropertyDescriptor;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
+import net.mojodna.searchable.util.AnnotationUtils;
 
 import org.apache.commons.beanutils.PropertyUtils;
 
 public class SearchableBeanUtils {
+    /** Default id property name */
     public static final String ID_PROPERTY_NAME = "id";
 
-    public static String getIdPropertyName(final Searchable bean) {
+    /**
+     * Reflect on the specified class to determine whether any fields have been
+     * marked as default fields to search.
+     * 
+     * @param clazz Class to reflect on.
+     * @return Collection of default field names specified in class.
+     */
+    public static Collection<String> getDefaultFieldNames(final Class<? extends Searchable> clazz) {
+        final Searchable.DefaultFields annotation = (Searchable.DefaultFields) AnnotationUtils.getAnnotation( clazz, Searchable.DefaultFields.class );
+        if ( null != annotation )
+            return Arrays.asList( annotation.value() );
+        return Collections.EMPTY_LIST;
+    }
+    
+    /**
+     * Gets the name of the property that should be used to generate a search
+     * excerpt.
+     * 
+     * @param clazz Class to reflect on.
+     * @return Name of the excerptable property; null if none present.
+     */
+    public static String getExcerptPropertyName(final Class<? extends Result> clazz) {
+        final PropertyDescriptor[] descriptors = PropertyUtils.getPropertyDescriptors( clazz );
+        for (final PropertyDescriptor d : descriptors) {
+            if ( AnnotationUtils.isAnnotationPresent( d.getReadMethod(), Searchable.Excerptable.class ) )
+                return d.getName();
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Gets the name of the property containing the bean's id.
+     * 
+     * @param clazz Class to reflect on.
+     * @return Name of the id property.
+     */
+    public static String getIdPropertyName(final Class<? extends Searchable> clazz) {
         // look for Searchable.ID annotation
-        final PropertyDescriptor[] pds = PropertyUtils.getPropertyDescriptors( bean );
+        final PropertyDescriptor[] pds = PropertyUtils.getPropertyDescriptors( clazz );
         for ( final PropertyDescriptor descriptor : pds ) {
             if ( descriptor.getReadMethod().isAnnotationPresent( Searchable.ID.class ) ) {
                 return descriptor.getName();

@@ -73,6 +73,10 @@ public interface Searchable extends Result {
         boolean value() default true;
     }
     
+    /**
+     * Mark this property as sortable.  Use the "nested" attribute to specify
+     * whether this field should be processed in a nested Searchable.
+     */
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Sortable {
@@ -80,12 +84,21 @@ public interface Searchable extends Result {
         boolean nested() default false;
     }
     
+    /**
+     * Provide a list of default fields to search when searching for an object
+     * of the annotated type.
+     */
+    // TODO move into Result for logic's sake?
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface DefaultFields {
         String[] value() default {};
     }
     
+    /**
+     * Mark this property as excerptable when creating search extracts.
+     */
+    // TODO move into Result for logic's sake?
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Excerptable {
