@@ -15,8 +15,8 @@ limitations under the License.
 */
 package net.mojodna.searchable;
 
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.lucene.search.Query;
@@ -29,7 +29,7 @@ import org.apache.lucene.search.Query;
 public class ResultSetImpl implements ResultSet {
 	private int offset;
     private Query query;
-	private List<? extends Result> results = Collections.EMPTY_LIST;
+	private List<Result> results = new LinkedList();
 	private int size;
 	
     /**
@@ -79,6 +79,10 @@ public class ResultSetImpl implements ResultSet {
         this.query = query;
     }
 	
+    public void add(final Result result) {
+        results.add( result );
+    }
+    
 	public List<? extends Result> getResults() {
 		return results;
 	}
@@ -88,7 +92,7 @@ public class ResultSetImpl implements ResultSet {
      * 
      * @param results Available results.
      */
-	public void setResults(final List<? extends Result> results) {
+	public void setResults(final List<Result> results) {
 		this.results = results;
 	}
 	
