@@ -52,7 +52,7 @@ public interface Searchable extends Result {
         String[] aliases() default {};
         float boost() default 1.0F;
         String name() default "";
-        boolean nested() default true;
+        boolean nested() default false;
         boolean stored() default false;
         boolean storeTermVector() default false;
         boolean tokenized() default true;
@@ -69,7 +69,7 @@ public interface Searchable extends Result {
     public @interface Stored {
         String[] aliases() default {};
         String name() default "";
-        boolean nested() default true;
+        boolean nested() default false;
         boolean value() default true;
     }
     
