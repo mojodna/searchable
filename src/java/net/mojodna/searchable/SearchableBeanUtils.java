@@ -18,28 +18,49 @@ package net.mojodna.searchable;
 import java.beans.PropertyDescriptor;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashSet;
 
 import net.mojodna.searchable.util.AnnotationUtils;
 
 import org.apache.commons.beanutils.PropertyUtils;
 
+/**
+ * Utility methods for working with Searchables.
+ * 
+ * @author Seth Fitzsimmons
+ */
 public class SearchableBeanUtils {
     /** Default id property name */
     public static final String ID_PROPERTY_NAME = "id";
 
     /**
+     * Reflect on a set of classes to determine whether any fields have been
+     * marked as default fields to search.
+     * 
+     * @param classes Classes to reflect on.
+     * @return Array of default field names specified in all classes.
+     */
+    public static String[] getDefaultFieldNames(final Class<? extends Searchable>[] classes) {
+        final Collection defaultFields = new HashSet();
+        for (final Class<? extends Searchable> clazz : classes) {
+            defaultFields.addAll( Arrays.asList( SearchableBeanUtils.getDefaultFieldNames( clazz ) ) );
+        }
+
+        return SearchableUtils.toStringArray( defaultFields );
+    }
+    
+    /**
      * Reflect on the specified class to determine whether any fields have been
      * marked as default fields to search.
      * 
      * @param clazz Class to reflect on.
-     * @return Collection of default field names specified in class.
+     * @return Array of default field names specified in class.
      */
-    public static Collection<String> getDefaultFieldNames(final Class<? extends Searchable> clazz) {
+    public static String[] getDefaultFieldNames(final Class<? extends Searchable> clazz) {
         final Searchable.DefaultFields annotation = (Searchable.DefaultFields) AnnotationUtils.getAnnotation( clazz, Searchable.DefaultFields.class );
         if ( null != annotation )
-            return Arrays.asList( annotation.value() );
-        return Collections.EMPTY_LIST;
+            return annotation.value();
+        return null;
     }
     
     /**
