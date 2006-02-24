@@ -123,7 +123,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @param descriptor Property descriptor.
      * @return Whether this property contains any index-specific annotations. 
      */
-    private boolean containsAnnotations(final PropertyDescriptor descriptor) {
+    private boolean containsIndexAnnotations(final PropertyDescriptor descriptor) {
         final Method readMethod = descriptor.getReadMethod();
         
         for ( final Class annotationClass : annotations ) {
@@ -132,6 +132,16 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
         }
         
         return false;
+    }
+    
+    /**
+     * Does this property contain any sortable-specific annotations?
+     * 
+     * @param descriptor Property descriptor.
+     * @return Whether this property contains any sortable-specific annotations. 
+     */
+    private boolean containsSortableAnnotations(final PropertyDescriptor descriptor) {
+        return AnnotationUtils.isAnnotationPresent( descriptor.getReadMethod(), Searchable.Sortable.class );
     }
     
     /**
@@ -354,12 +364,11 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
     private Document processBean(final Document doc, final Searchable bean, final Stack<String> stack, final float boost) throws IndexingException {
         // iterate through fields
         for ( final PropertyDescriptor d : PropertyUtils.getPropertyDescriptors( bean ) ) {
-            if ( !containsAnnotations( d ) ) {
-                continue;
-            }
-
-            addBeanFields( doc, bean, d, stack, boost );
-            addSortableFields( doc, bean, d, stack );
+            if ( containsIndexAnnotations( d ) )
+                addBeanFields( doc, bean, d, stack, boost );
+            
+            if ( containsSortableAnnotations( d ) )
+                addSortableFields( doc, bean, d, stack );
         }
         return doc;
     }
@@ -491,7 +500,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
                     if ( prop instanceof Date ) {
                         // handle Dates specially
                         doc.add( Field.Keyword( SORTABLE_PREFIX + getFieldname( fieldname, stack ), (Date) prop ) );
-                    } else {
+                    } else if ( !( prop instanceof Searchable ) ) {
                         final String value = prop.toString();
                         doc.add( Field.Keyword( SORTABLE_PREFIX + getFieldname( fieldname, stack ), value ) );
                     }
