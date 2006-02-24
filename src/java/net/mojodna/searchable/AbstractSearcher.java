@@ -17,8 +17,7 @@ package net.mojodna.searchable;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -40,6 +39,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.highlight.QueryHighlightExtractor;
 import org.apache.lucene.store.RAMDirectory;
@@ -286,12 +286,40 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected ResultSet doSearch(final Query query, final Integer offset, final Integer count, final Sort sort) throws SearchException {
-        IndexSearcher searcher = null;
+        // load the index directory into memory (for performance and locking reasons)
+        // TODO share a searcher to benefit from cached queries
+        Searcher searcher = null;
         try {
-            // load the index directory into memory (for performance and locking reasons)
-            // TODO share a searcher to benefit from cached queries
             searcher = new IndexSearcher( new RAMDirectory( getIndexDirectory() ) );
-
+            return doSearch( query, searcher, offset, count, sort );
+        }
+        catch (final IOException e) {
+            throw new SearchException( e );
+        }
+        finally {
+            try {
+            if ( null != searcher )
+                searcher.close();
+            }
+            catch (final IOException e) {
+                throw new SearchException("Unable to close searcher.", e );
+            }
+        }
+    }
+    
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @searcher Lucene Searcher to perform the search with.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sort Sort to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final Query query, final Searcher searcher, final Integer offset, final Integer count, final Sort sort) throws SearchException {
+        try {
             // execute the search
             log.debug("Searching with query: " + query.toString() );
             final Hits hits = searcher.search(query, sort);
@@ -389,15 +417,6 @@ public abstract class AbstractSearcher extends IndexSupport {
         }
         catch (final IOException e) {
             throw new SearchException( e );
-        }
-        finally {
-            try {
-            if ( null != searcher )
-                searcher.close();
-            }
-            catch (final IOException e) {
-                throw new SearchException("Unable to close searcher.", e );
-            }
         }
     }
     
@@ -629,28 +648,33 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected ResultSet doSearch(final String _query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final Sort sort)  throws SearchException {
-        Collection fields = Collections.EMPTY_LIST;
+        String[] fields = new String[0];
         if ( null != clazz )
             fields = SearchableBeanUtils.getDefaultFieldNames( clazz );
-        if ( fields.isEmpty() )
+        if ( null == fields || fields.length == 0 )
             fields = getFieldsPresent();
         
-        log.debug("Fields being searched: " + fields);
+        log.debug("Fields being searched: " + Arrays.asList( fields ) );
         
-        // convert field collection to an array of Strings
-        // Collection.toArray() causes a ClassCastException here.
-        final String[] defaultFields = new String[ fields.size() ];
-        int i = 0;
-        for (final Object f : fields) {
-            defaultFields[i++] = f.toString();
-        }
-
-        final Query query = MultiFieldQueryPreparer.prepareQuery( _query, defaultFields, getAnalyzer() );
+        final Query query = MultiFieldQueryPreparer.prepareQuery( _query, fields, getAnalyzer() );
         final ResultSet results = doSearch( query, offset, count, sort );
         
         log.debug("Found " + results.size() + " document(s) that matched query '" + _query + "':");
         
         return results;
+    }
+    
+    /**
+     * Prepare a query against a set of default fields.
+     * 
+     * @param query String representation of query.
+     * @param defaultFields Default fields to search against.
+     * @return Lucene query representation.
+     * @throws SearchException
+     */
+    protected Query prepareQuery(final String query, final String[] defaultFields) throws SearchException {
+        // TODO use Lucene 1.9's MultiFieldQueryParser when available
+        return MultiFieldQueryPreparer.prepareQuery( query, defaultFields, getAnalyzer() );
     }
     
     /**
@@ -664,7 +688,50 @@ public abstract class AbstractSearcher extends IndexSupport {
         IndexReader reader = null;
         try {
             reader = IndexReader.open( getIndexDirectory() );
+            return isFieldPresent( field, reader );
+        }
+        catch (final IOException e) {
+            throw new SearchException( e );
+        }
+        finally {
+            try {
+            if ( null != reader )
+                reader.close();
+            }
+            catch (final IOException e) {
+                throw new SearchException("Unable to close reader.", e );
+            }
+        } 
+    }
+    
+    /**
+     * Is the specified field present in the index?
+     * 
+     * @param field Field to search for.
+     * @param reader IndexReader to use to obtain fields.
+     * @return Whether the specified field is present in the index.
+     * @throws SearchException
+     */
+    protected boolean isFieldPresent(final String field, final IndexReader reader) throws SearchException {
+        try {
             return reader.getFieldNames( true ).contains( field );
+        }
+        catch (final IOException e) {
+            throw new SearchException( e );
+        }
+    }
+    
+    /**
+     * Gets a Collection of all fields present in the index.
+     * 
+     * @return Collection of field names.
+     * @throws SearchException
+     */
+    protected String[] getFieldsPresent() throws SearchException {
+        IndexReader reader = null;
+        try {
+            reader = IndexReader.open( getIndexDirectory() );
+            return getFieldsPresent( reader );
         }
         catch (final IOException e) {
             throw new SearchException( e );
@@ -681,28 +748,18 @@ public abstract class AbstractSearcher extends IndexSupport {
     }
     
     /**
-     * Gets a Collection of all fields present in the index.
+     * Gets a list of all fields present in the index.
      * 
-     * @return Collection of field names.
+     * @param reader IndexReader to use to obtain fields.
+     * @return Array of field names.
      * @throws SearchException
      */
-    protected Collection<String> getFieldsPresent() throws SearchException {
-        IndexReader reader = null;
+    protected String[] getFieldsPresent(final IndexReader reader) throws SearchException {
         try {
-            reader = IndexReader.open( getIndexDirectory() );
-            return CollectionUtils.subtract( reader.getFieldNames( true ), IndexSupport.PRIVATE_FIELD_NAMES );
+            return SearchableUtils.toStringArray( CollectionUtils.subtract( reader.getFieldNames( true ), IndexSupport.PRIVATE_FIELD_NAMES ) );
         }
         catch (final IOException e) {
             throw new SearchException( e );
-        }
-        finally {
-            try {
-            if ( null != reader )
-                reader.close();
-            }
-            catch (final IOException e) {
-                throw new SearchException("Unable to close reader.", e );
-            }
         }
     }
     
