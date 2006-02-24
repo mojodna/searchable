@@ -79,11 +79,29 @@ public class ResultSetImpl implements ResultSet {
         this.query = query;
     }
 	
+    /**
+     * Adds a result to the end of the resultset.  This is convenient for
+     * constructing ResultSets on the fly.
+     * 
+     * @param result Result to add.
+     */
     public void add(final Result result) {
         results.add( result );
     }
     
+    /**
+     * Replaces an existing Result with something presumably equivalent.
+     * Result-specific properties are copied between objects as part of this
+     * process.
+     * 
+     * @param r1 Result to replace.
+     * @param r2 Replacement result.
+     */
     public void replace(final Result r1, final Result r2) {
+        r2.setRanking( r1.getRanking() );
+        r2.setScore( r1.getScore() );
+        r2.setSearchExtract( r1.getSearchExtract() );
+        r2.setStoredFields( r1.getStoredFields() );
         results.set( results.indexOf( r1 ), r2 );
     }
     
