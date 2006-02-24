@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Stack;
 
@@ -130,12 +131,8 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      */
     private String getFieldname(final String fieldname, final Stack<String> stack) {
         if ( !stack.isEmpty() ) {
-            final StringBuffer sb = new StringBuffer();
-            for ( final String component : stack ) {
-                sb.append( component )
-                  .append(".");
-            }
-            sb.append( fieldname );
+            final StringBuffer sb = new StringBuffer( getFieldname( stack ));
+            sb.append(".").append( fieldname );
             return sb.toString();
         } else {
             return fieldname;
@@ -143,13 +140,33 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
     }
     
     /**
-     * Generate a list of fully qualified field names for a given property.
+     * Convert a Stack to a fully-qualified field name.
+     * 
+     * @param stack Stack containing parent property names.
+     * @return Fully qualified field name.
+     */
+    private String getFieldname(final Stack<String> stack) {
+        if ( !stack.isEmpty() ) {
+            final StringBuffer sb = new StringBuffer();
+            for ( final Iterator<String> i = stack.iterator(); i.hasNext(); ) {
+                final String component = i.next();
+                sb.append( component );
+                if ( i.hasNext() )
+                    sb.append(".");
+            }
+            return sb.toString();
+        } else {
+            return "";
+        }
+    }
+    
+    /**
+     * Generate a list of field names for a given property.
      * 
      * @param descriptor Property descriptor.
-     * @param stack Stack containing parent property names.
-     * @return Collection of fully qualified field names.
+     * @return Collection of field names.
      */
-    private Collection<String> getFieldnames(final PropertyDescriptor descriptor, final Stack<String> stack) {
+    private Collection<String> getFieldnames(final PropertyDescriptor descriptor) {
         final Collection<String> fieldnames = new LinkedList();
         
         String fieldname = descriptor.getName();
@@ -180,12 +197,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
         // add the default field name
         fieldnames.add( fieldname );
         
-        final Collection<String> prefixedFieldnames = new LinkedList();
-        for (final String name : fieldnames ) {
-            prefixedFieldnames.add( getFieldname( name, stack ) );
-        }
-        
-        return prefixedFieldnames;
+        return fieldnames;
     }
     
     /**
@@ -203,12 +215,17 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
             } else if ( annotation instanceof Stored ) {
                 final Stored s = (Stored) annotation;
                 return s.nested();
-            } else if ( annotation instanceof Sortable ) {
-                final Sortable s = (Sortable) annotation;
-                return s.nested();
             }
         }
         
+        return false;
+    }
+    
+    private boolean isNestedSortable(final PropertyDescriptor descriptor) {
+        final Searchable.Sortable annotation = (Searchable.Sortable) AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Sortable.class );
+        if ( null != annotation )
+            return annotation.nested();
+
         return false;
     }
     
@@ -356,8 +373,8 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
                     continue;
                 }
 
-                for (final String fieldname : getFieldnames( descriptor, stack ) ) {
-                    log.debug("Indexing " + descriptor.getName() + " as " + fieldname );
+                for (final String fieldname : getFieldnames( descriptor ) ) {
+                    log.debug("Indexing " + descriptor.getName() + " as " + getFieldname( fieldname, stack ) );
                     
                     try {
                         final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
@@ -396,7 +413,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
             // handle Dates specially
             float boost = getBoost( descriptor );
             
-            final Field field = Field.Keyword( fieldname, (Date) prop );
+            final Field field = Field.Keyword( getFieldname( fieldname, stack ), (Date) prop );
             field.setBoost( inheritedBoost * boost );
             doc.add( field );
         } else if ( prop instanceof Iterable ) {
@@ -415,7 +432,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
             }
         } else if ( prop instanceof Searchable  ) {
             // nested Searchables
-            stack.push( descriptor.getName() );
+            stack.push( fieldname );
             
             processBean( doc, (Searchable) prop, stack, inheritedBoost * getBoost( descriptor ) );
             
@@ -424,7 +441,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
             final String value = prop.toString();
             float boost = getBoost( descriptor );
 
-            final Field field = new Field( fieldname, value, isStored( descriptor ), isIndexed( descriptor ), isTokenized( descriptor ), isVectorized( descriptor ) );
+            final Field field = new Field( getFieldname( fieldname, stack ), value, isStored( descriptor ), isIndexed( descriptor ), isTokenized( descriptor ), isVectorized( descriptor ) );
             field.setBoost( inheritedBoost * boost );
             doc.add( field );
         }
@@ -447,12 +464,12 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
         if ( null != readMethod && AnnotationUtils.isAnnotationPresent( readMethod, Sortable.class ) ) {
             
             // don't index elements marked as nested=false in a nested context
-            if ( !stack.isEmpty() && !isNested( descriptor ) ) {
+            if ( !stack.isEmpty() && !isNestedSortable( descriptor ) ) {
                 return doc;
             }
 
-            for (final String fieldname : getFieldnames( descriptor, stack ) ) {
-                log.debug("Indexing " + descriptor.getName() + " as sortable (" + fieldname + ")." );
+            for (final String fieldname : getFieldnames( descriptor ) ) {
+                log.debug("Indexing " + descriptor.getName() + " as sortable (" + getFieldname( fieldname, stack ) + ")." );
                 
                 try {
                     final Object prop = PropertyUtils.getProperty( bean, descriptor.getName() );
@@ -461,10 +478,10 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
                     
                     if ( prop instanceof Date ) {
                         // handle Dates specially
-                        doc.add( Field.Keyword( SORTABLE_PREFIX + fieldname, (Date) prop ) );
+                        doc.add( Field.Keyword( SORTABLE_PREFIX + getFieldname( fieldname, stack ), (Date) prop ) );
                     } else {
                         final String value = prop.toString();
-                        doc.add( Field.Keyword( SORTABLE_PREFIX + fieldname, value ) );
+                        doc.add( Field.Keyword( SORTABLE_PREFIX + getFieldname( fieldname, stack ), value ) );
                     }
                 }
                 catch (final Exception e) {
