@@ -629,15 +629,23 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected ResultSet doSearch(final String _query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final Sort sort)  throws SearchException {
-        Collection<String> fields = Collections.EMPTY_LIST;
+        Collection fields = Collections.EMPTY_LIST;
         if ( null != clazz )
             fields = SearchableBeanUtils.getDefaultFieldNames( clazz );
         if ( fields.isEmpty() )
             fields = getFieldsPresent();
         
         log.debug("Fields being searched: " + fields);
+        
+        // convert field collection to an array of Strings
+        // Collection.toArray() causes a ClassCastException here.
+        final String[] defaultFields = new String[ fields.size() ];
+        int i = 0;
+        for (final Object f : fields) {
+            defaultFields[i++] = f.toString();
+        }
 
-        final Query query = MultiFieldQueryPreparer.prepareQuery( _query, (String[]) fields.toArray(), getAnalyzer() );
+        final Query query = MultiFieldQueryPreparer.prepareQuery( _query, defaultFields, getAnalyzer() );
         final ResultSet results = doSearch( query, offset, count, sort );
         
         log.debug("Found " + results.size() + " document(s) that matched query '" + _query + "':");
