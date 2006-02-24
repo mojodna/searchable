@@ -128,6 +128,25 @@ public class AnnotationUtils {
     public static boolean isAnnotationPresent(final Method method, final Class<? extends Annotation> annotation) {
         return ( null != getAnnotation( method, annotation ) ); 
     }
+    
+    /**
+     * Determine whether a class hierarchy is annotated with a specific
+     * annotation.
+     * 
+     * This differs from AnnotatedElement.getAnnotations() in that it looks up
+     * the class hierarchy for inherited annotations.  (@Inherit only applies
+     * to class-level annotations.)  It also checks declarations within
+     * interfaces.
+     * 
+     * @see java.lang.reflect.AnnotatedElement#getAnnotations()
+     * 
+     * @param clazz Class to check for present annotations.
+     * @param annotation Annotation to look for.
+     * @return Whether the specified annotation is present on a given class.
+     */
+    public static boolean isAnnotationPresent(final Class clazz, final Class<? extends Annotation> annotation) {
+        return ( null != getAnnotation( clazz, annotation ) ); 
+    }
 
     /**
      * Gets a Collection of classes extended and interfaces implemented by the
