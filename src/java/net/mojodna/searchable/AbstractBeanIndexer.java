@@ -16,6 +16,7 @@ limitations under the License.
 package net.mojodna.searchable;
 
 import java.beans.PropertyDescriptor;
+import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -85,11 +86,22 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * property annotated with Searchable.ID.  If none are available, it
      * falls back to the "id" field (if present).
      * 
+     * Any properties used as ids must be Serializable.
+     * 
+     * @see AbstractSearcher#getId(Searchable)
+     * 
      * @param bean Object to reflect on.
+     * @throws IndexingException
      */
-    protected Object getId(final Searchable bean) throws IndexingException {
+    protected Serializable getId(final Searchable bean) throws IndexingException {
         try {
-            return PropertyUtils.getProperty( bean, SearchableBeanUtils.getIdPropertyName( bean.getClass() ) );
+            final Object id = PropertyUtils.getProperty( bean, SearchableBeanUtils.getIdPropertyName( bean.getClass() ) );
+            if ( id instanceof Serializable ) {
+                return (Serializable) id;
+            } else {
+                log.error("The id property for " + bean.getClass() + " must be Serializable.");
+                throw new IndexingException("Id properties must be Serializable.");
+            }
         } catch (final Exception e) {
             throw new IndexingException("Unable to determine value for id.", e );
         }
