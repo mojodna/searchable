@@ -403,8 +403,10 @@ public abstract class AbstractSearcher extends IndexSupport {
                 final QueryHighlightExtractor highlighter = new QueryHighlightExtractor( query, getAnalyzer(), getHighlightOpen(), getHighlightClose());
                 
                 final Object body = PropertyUtils.getProperty( result, excerptProperty );
-                final String extract = highlighter.getBestFragments( body.toString(), getHighlightFragmentSize(), getHighlightMaxNumFragmentsRequired(), getHighlightFragmentSeparator());
-                result.setSearchExtract( extract );
+                if ( null != body ) {
+                    final String extract = highlighter.getBestFragments( body.toString(), getHighlightFragmentSize(), getHighlightMaxNumFragmentsRequired(), getHighlightFragmentSeparator());
+                    result.setSearchExtract( extract );
+                }
             }
             catch (final Exception e) {
                 throw new SearchException( e );
