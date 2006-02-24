@@ -83,6 +83,10 @@ public class ResultSetImpl implements ResultSet {
         results.add( result );
     }
     
+    public void replace(final Result r1, final Result r2) {
+        results.set( results.indexOf( r1 ), r2 );
+    }
+    
 	public List<? extends Result> getResults() {
 		return results;
 	}
