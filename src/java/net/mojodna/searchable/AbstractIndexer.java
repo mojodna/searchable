@@ -50,7 +50,7 @@ public abstract class AbstractIndexer extends IndexSupport {
      * non-Searchables.
      * 
      * @param type Type of object being indexed (usually a fully qualified class name).
-     * @id Id of object being indexed.
+     * @param id Id of object being indexed.
      * @return Initialized document.
      */
     protected Document createDocument(final String type, final Object id) {

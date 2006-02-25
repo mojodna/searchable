@@ -83,7 +83,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
      * @param query Query to use.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
-     * @param sortField Field to sort by.
+     * @param sort Sort to use.
      * @return ResultSet containing results.
      * @throws SearchException
      */

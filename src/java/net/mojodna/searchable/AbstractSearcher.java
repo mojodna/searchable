@@ -311,7 +311,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * Search the index with the specified query.
      * 
      * @param query Query to use.
-     * @searcher Lucene Searcher to perform the search with.
+     * @param searcher Lucene Searcher to perform the search with.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
      * @param sort Sort to use.
@@ -639,7 +639,7 @@ public abstract class AbstractSearcher extends IndexSupport {
     /**
      * Search the index with the specified query.
      * 
-     * @param query Query to use.
+     * @param _query Query to use.
      * @param clazz Type of object being searched for.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
