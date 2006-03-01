@@ -90,7 +90,7 @@ public class SearchableBeanUtils {
         // look for Searchable.ID annotation
         final PropertyDescriptor[] pds = PropertyUtils.getPropertyDescriptors( clazz );
         for ( final PropertyDescriptor descriptor : pds ) {
-            if ( descriptor.getReadMethod().isAnnotationPresent( Searchable.ID.class ) ) {
+            if ( null != descriptor && null != descriptor.getReadMethod() && descriptor.getReadMethod().isAnnotationPresent( Searchable.ID.class ) ) {
                 return descriptor.getName();
             }
         }
