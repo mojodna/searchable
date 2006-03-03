@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import net.mojodna.searchable.converter.UUIDConverter;
-import net.mojodna.searchable.util.MultiFieldQueryPreparer;
 
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.PropertyUtils;
@@ -36,13 +35,14 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.queryParser.MultiFieldQueryParser;
+import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.highlight.QueryHighlightExtractor;
-import org.apache.lucene.store.RAMDirectory;
 
 /**
  * Core methods for searching an index.  This is intended to be subclassed by
@@ -83,15 +83,6 @@ public abstract class AbstractSearcher extends IndexSupport {
         if ( null == ConvertUtils.lookup( UUID.class ) ) {
             ConvertUtils.register( new UUIDConverter(), UUID.class );
         }
-    }
-    
-    /**
-     * Constructor.
-     * 
-     * @throws IndexException
-     */
-    public AbstractSearcher() throws IndexException {
-        super();
     }
     
     /**
@@ -221,7 +212,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @param query Query to use.
      * @return ResultSet containing results.
      */
-    protected ResultSet doSearch(final Query query) throws SearchException {
+    protected ResultSet doSearch(final Query query) throws IndexException {
         return doSearch( query, 0, null );
     }
     
@@ -234,7 +225,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final Query query, final Integer offset, final Integer count) throws SearchException {
+    protected ResultSet doSearch(final Query query, final Integer offset, final Integer count) throws IndexException {
         return doSearch( query, offset, count, Sort.RELEVANCE );
     }
     
@@ -249,7 +240,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     // TODO add support for String[] sortFields
-    protected ResultSet doSearch(final Query query, final Integer offset, final Integer count, final String sortField) throws SearchException {
+    protected ResultSet doSearch(final Query query, final Integer offset, final Integer count, final String sortField) throws IndexException {
         Sort sort = Sort.RELEVANCE;
         if ( StringUtils.isNotBlank( sortField )) 
             sort = new Sort( IndexSupport.SORTABLE_PREFIX + sortField );
@@ -267,7 +258,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final Query query, final Integer offset, final Integer count, final String sortField, final boolean reverse) throws SearchException {
+    protected ResultSet doSearch(final Query query, final Integer offset, final Integer count, final String sortField, final boolean reverse) throws IndexException {
         Sort sort = Sort.RELEVANCE;
         if ( StringUtils.isNotBlank( sortField )) 
             sort = new Sort( IndexSupport.SORTABLE_PREFIX + sortField, reverse );
@@ -285,25 +276,12 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final Query query, final Integer offset, final Integer count, final Sort sort) throws SearchException {
-        // load the index directory into memory (for performance and locking reasons)
-        // TODO share a searcher to benefit from cached queries
-        Searcher searcher = null;
+    protected ResultSet doSearch(final Query query, final Integer offset, final Integer count, final Sort sort) throws IndexException {
         try {
-            searcher = new IndexSearcher( new RAMDirectory( getIndexDirectory() ) );
-            return doSearch( query, searcher, offset, count, sort );
+            return doSearch( query, getIndexSearcher(), offset, count, sort );
         }
         catch (final IOException e) {
             throw new SearchException( e );
-        }
-        finally {
-            try {
-            if ( null != searcher )
-                searcher.close();
-            }
-            catch (final IOException e) {
-                throw new SearchException("Unable to close searcher.", e );
-            }
         }
     }
     
@@ -318,106 +296,101 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final Query query, final Searcher searcher, final Integer offset, final Integer count, final Sort sort) throws SearchException {
-        try {
-            // execute the search
-            log.debug("Searching with query: " + query.toString() );
-            final Hits hits = searcher.search(query, sort);
+    protected ResultSet doSearch(final Query query, final Searcher searcher, final Integer offset, final Integer count, final Sort sort) throws SearchException, IOException {
+    	// execute the search
+    	log.debug("Searching with query: " + query.toString() );
+    	final Hits hits = searcher.search(query, sort);
 
-            // create a container for results
-            final List<Result> results = new LinkedList<Result>();
-            
-            // instantiate and initialize the ResultSet
-            final ResultSetImpl rs = new ResultSetImpl( hits.length() );
-            rs.setQuery( query );
+    	// create a container for results
+    	final List<Result> results = new LinkedList<Result>();
 
-            final int numResults;
-            if ( null != count )
-                numResults = Math.min( offset + count, hits.length() );
-            else
-                numResults = hits.length();
-            
-            rs.setOffset( offset );
-            
-            // loop through results starting at offset and stopping after numResults
-            for (int i = offset; i < numResults; i++) {
-                final Document doc = hits.doc(i);
-                Result result = null;
-                
-                // load the class name
-                final String className = doc.get( TYPE_FIELD_NAME );
-                try {
-                    // attempt to instantiate an instance of the specified class
-                    try {
-                        if ( null != className ) {
-                            final Object o = Class.forName( className ).newInstance();
-                            if ( o instanceof Result ) {
-                                log.debug("Created new instance of: " + className);
-                                result = (Result) o;
-                            }
-                        }
-                    }
-                    catch (final ClassNotFoundException e) {
-                        // class was invalid, or something
-                    }
+    	// instantiate and initialize the ResultSet
+    	final ResultSetImpl rs = new ResultSetImpl( hits.length() );
+    	rs.setQuery( query );
 
-                    // fall back to a GenericResult as a container
-                    if ( null == result )
-                        result = new GenericResult();
-                    
-                    if ( result instanceof Searchable ) {
-                        // special handling for searchables
-                        final String idField = SearchableBeanUtils.getIdPropertyName( ((Searchable) result).getClass() );
-                        
-                        // attempt to load the id and set the id property on the Searchable appropriately
-                        final String id = doc.get( ID_FIELD_NAME );
-                        final Field idClass = doc.getField( ID_TYPE_FIELD_NAME );
-                        if ( null != id ) {
-                            log.debug("Setting id to '" + id + "' of type " + idClass.stringValue() );
-                            try {
-                                final Object idValue = ConvertUtils.convert( id, Class.forName( idClass.stringValue() ) );
-                                PropertyUtils.setSimpleProperty(result, idField, idValue );
-                            }
-                            catch (final ClassNotFoundException e) {
-                                log.warn("Id type was not a class that could be found: " + idClass.stringValue() );
-                            }
-                        } else {
-                            log.warn("Id value was null.");
-                        }
-                    } else {
-                        final GenericResult gr = new GenericResult();
-                        gr.setId( doc.get( ID_FIELD_NAME ) );
-                        gr.setType( doc.get( TYPE_FIELD_NAME ) );
-                        result = gr;
-                    }
-                    
-                    // load stored fields and put them in the Result
-                    final Map<String,String> storedFields = new HashMap();
-                    final Enumeration fields = doc.fields();
-                    while (fields.hasMoreElements()) {
-                        final Field f = (Field) fields.nextElement();
-                        // exclude private fields
-                        if ( !PRIVATE_FIELD_NAMES.contains( f.name() ) && !f.name().startsWith( IndexSupport.SORTABLE_PREFIX ) )
-                            storedFields.put( f.name(), f.stringValue() );
-                    }
-                    result.setStoredFields( storedFields );
-                }
-                catch (final Exception e) {
-                    throw new SearchException("Could not reconstitute resultant object.", e );
-                }
-                
-                result.setRanking( i );
-                result.setScore( hits.score( i ) );
-                
-                results.add( result );
-            }
+    	final int numResults;
+    	if ( null != count )
+    		numResults = Math.min( offset + count, hits.length() );
+    	else
+    		numResults = hits.length();
 
-            rs.setResults( results );
-            return rs;
-        }
-        catch (final IOException e) {
-            throw new SearchException( e );
-        }
+    	rs.setOffset( offset );
+
+    	// loop through results starting at offset and stopping after numResults
+    	for (int i = offset; i < numResults; i++) {
+    		final Document doc = hits.doc(i);
+    		Result result = null;
+
+    		// load the class name
+    		final String className = doc.get( TYPE_FIELD_NAME );
+    		try {
+    			// attempt to instantiate an instance of the specified class
+    			try {
+    				if ( null != className ) {
+    					final Object o = Class.forName( className ).newInstance();
+    					if ( o instanceof Result ) {
+    						log.debug("Created new instance of: " + className);
+    						result = (Result) o;
+    					}
+    				}
+    			}
+    			catch (final ClassNotFoundException e) {
+    				// class was invalid, or something
+    			}
+
+    			// fall back to a GenericResult as a container
+    			if ( null == result )
+    				result = new GenericResult();
+
+    			if ( result instanceof Searchable ) {
+    				// special handling for searchables
+    				final String idField = SearchableBeanUtils.getIdPropertyName( ((Searchable) result).getClass() );
+
+    				// attempt to load the id and set the id property on the Searchable appropriately
+    				final String id = doc.get( ID_FIELD_NAME );
+    				final Field idClass = doc.getField( ID_TYPE_FIELD_NAME );
+    				if ( null != id ) {
+    					log.debug("Setting id to '" + id + "' of type " + idClass.stringValue() );
+    					try {
+    						final Object idValue = ConvertUtils.convert( id, Class.forName( idClass.stringValue() ) );
+    						PropertyUtils.setSimpleProperty(result, idField, idValue );
+    					}
+    					catch (final ClassNotFoundException e) {
+    						log.warn("Id type was not a class that could be found: " + idClass.stringValue() );
+    					}
+    				} else {
+    					log.warn("Id value was null.");
+    				}
+    			} else {
+    				final GenericResult gr = new GenericResult();
+    				gr.setId( doc.get( ID_FIELD_NAME ) );
+    				gr.setType( doc.get( TYPE_FIELD_NAME ) );
+    				result = gr;
+    			}
+
+    			// load stored fields and put them in the Result
+    			final Map<String,String> storedFields = new HashMap<String,String>();
+    			final Enumeration fields = doc.fields();
+    			while (fields.hasMoreElements()) {
+    				final Field f = (Field) fields.nextElement();
+    				// exclude private fields
+    				if ( !PRIVATE_FIELD_NAMES.contains( f.name() ) && !f.name().startsWith( IndexSupport.SORTABLE_PREFIX ) )
+    					storedFields.put( f.name(), f.stringValue() );
+    			}
+    			result.setStoredFields( storedFields );
+    		}
+    		catch (final Exception e) {
+    			throw new SearchException("Could not reconstitute resultant object.", e );
+    		}
+
+    		result.setRanking( i );
+    		result.setScore( hits.score( i ) );
+
+    		results.add( result );
+    	}
+
+    	rs.setResults( results );
+    	return rs;
     }
     
     /**
@@ -470,7 +443,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @param query Query to use.
      * @return ResultSet containing results.
      */
-    protected ResultSet doSearch(final String query) throws SearchException {
+    protected ResultSet doSearch(final String query) throws IndexException {
         return doSearch( query, 0, null );
     }
 
@@ -481,7 +454,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @param clazz Type of object being searched for.
      * @return ResultSet containing results.
      */
-    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz) throws SearchException {
+    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz) throws IndexException {
         return doSearch( query, clazz, 0, null );
     }
     
@@ -493,7 +466,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final String sortField) throws SearchException {
+    protected ResultSet doSearch(final String query, final String sortField) throws IndexException {
         return doSearch( query, 0, null, sortField );
     }
 
@@ -506,7 +479,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final String sortField) throws SearchException {
+    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final String sortField) throws IndexException {
         return doSearch( query, clazz, 0, null, sortField );
     }
     
@@ -518,7 +491,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Sort sort) throws SearchException {
+    protected ResultSet doSearch(final String query, final Sort sort) throws IndexException {
         return doSearch( query, 0, null, sort );
     }
 
@@ -531,7 +504,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final Sort sort) throws SearchException {
+    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final Sort sort) throws IndexException {
         return doSearch( query, clazz, 0, null, sort );
     }
     
@@ -544,7 +517,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Integer offset, final Integer count)  throws SearchException {
+    protected ResultSet doSearch(final String query, final Integer offset, final Integer count)  throws IndexException {
         return doSearch( query, offset, count, Sort.RELEVANCE );
     }
 
@@ -558,7 +531,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count)  throws SearchException {
+    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count)  throws IndexException {
         return doSearch( query, clazz, offset, count, Sort.RELEVANCE );
     }
     
@@ -572,7 +545,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Integer offset, final Integer count, final String sortField)  throws SearchException {
+    protected ResultSet doSearch(final String query, final Integer offset, final Integer count, final String sortField)  throws IndexException {
         return doSearch( query, offset, count, sortField, false );
     }
     
@@ -587,7 +560,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final String sortField)  throws SearchException {
+    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final String sortField)  throws IndexException {
         return doSearch( query, clazz, offset, count, sortField, false );
     }
     
@@ -602,7 +575,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws SearchException {
+    protected ResultSet doSearch(final String query, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
         return doSearch( query, offset, count, new Sort( sortField, reverse ) );
     }
     
@@ -618,7 +591,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws SearchException {
+    protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
         return doSearch( query, clazz, offset, count, new Sort( sortField, reverse ) );
     }
     
@@ -632,7 +605,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String query, final Integer offset, final Integer count, final Sort sort)  throws SearchException {
+    protected ResultSet doSearch(final String query, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
         return doSearch( query, null, offset, count, sort );
     }
     
@@ -647,7 +620,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final String _query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final Sort sort)  throws SearchException {
+    protected ResultSet doSearch(final String _query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
         String[] fields = new String[0];
         if ( null != clazz )
             fields = SearchableBeanUtils.getDefaultFieldNames( clazz );
@@ -656,7 +629,7 @@ public abstract class AbstractSearcher extends IndexSupport {
         
         log.debug("Fields being searched: " + Arrays.asList( fields ) );
         
-        final Query query = MultiFieldQueryPreparer.prepareQuery( _query, fields, getAnalyzer() );
+        final Query query = prepareQuery( _query, fields );
         final ResultSet results = doSearch( query, offset, count, sort );
         
         log.debug("Found " + results.size() + " document(s) that matched query '" + _query + "':");
@@ -673,8 +646,14 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected Query prepareQuery(final String query, final String[] defaultFields) throws SearchException {
-        // TODO use Lucene 1.9's MultiFieldQueryParser when available
-        return MultiFieldQueryPreparer.prepareQuery( query, defaultFields, getAnalyzer() );
+    	final MultiFieldQueryParser mfp = new MultiFieldQueryParser( defaultFields, getAnalyzer() );
+    	mfp.setDefaultOperator( MultiFieldQueryParser.AND_OPERATOR );
+    	try {
+    		return mfp.parse( query );
+    	}
+    	catch (final ParseException e) {
+    		throw new SearchException("Unable to prepare query.", e);
+    	}
     }
     
     /**
@@ -684,24 +663,13 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return Whether the specified field is present in the index.
      * @throws SearchException
      */
-    protected boolean isFieldPresent(final String field) throws SearchException {
-        IndexReader reader = null;
+    protected boolean isFieldPresent(final String field) throws IndexException {
         try {
-            reader = IndexReader.open( getIndexDirectory() );
-            return isFieldPresent( field, reader );
+            return isFieldPresent( field, getIndexReader() );
         }
         catch (final IOException e) {
             throw new SearchException( e );
         }
-        finally {
-            try {
-            if ( null != reader )
-                reader.close();
-            }
-            catch (final IOException e) {
-                throw new SearchException("Unable to close reader.", e );
-            }
-        } 
     }
     
     /**
@@ -712,13 +680,8 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return Whether the specified field is present in the index.
      * @throws SearchException
      */
-    protected boolean isFieldPresent(final String field, final IndexReader reader) throws SearchException {
-        try {
-            return reader.getFieldNames( true ).contains( field );
-        }
-        catch (final IOException e) {
-            throw new SearchException( e );
-        }
+    protected boolean isFieldPresent(final String field, final IndexReader reader) throws SearchException, IOException {
+    	return reader.getFieldNames( true ).contains( field );
     }
     
     /**
@@ -727,23 +690,12 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return Collection of field names.
      * @throws SearchException
      */
-    protected String[] getFieldsPresent() throws SearchException {
-        IndexReader reader = null;
+    protected String[] getFieldsPresent() throws IndexException {
         try {
-            reader = IndexReader.open( getIndexDirectory() );
-            return getFieldsPresent( reader );
+            return getFieldsPresent( getIndexReader() );
         }
         catch (final IOException e) {
             throw new SearchException( e );
-        }
-        finally {
-            try {
-            if ( null != reader )
-                reader.close();
-            }
-            catch (final IOException e) {
-                throw new SearchException("Unable to close reader.", e );
-            }
         }
     }
     
@@ -754,13 +706,8 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return Array of field names.
      * @throws SearchException
      */
-    protected String[] getFieldsPresent(final IndexReader reader) throws SearchException {
-        try {
-            return SearchableUtils.toStringArray( CollectionUtils.subtract( reader.getFieldNames( true ), IndexSupport.PRIVATE_FIELD_NAMES ) );
-        }
-        catch (final IOException e) {
-            throw new SearchException( e );
-        }
+    protected String[] getFieldsPresent(final IndexReader reader) throws SearchException, IOException {
+    	return SearchableUtils.toStringArray( CollectionUtils.subtract( reader.getFieldNames( true ), IndexSupport.PRIVATE_FIELD_NAMES ) );
     }
     
     /**
@@ -770,23 +717,12 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return Document.
      * @throws SearchException
      */
-    protected Document getDocument(final int id) throws SearchException {
-        IndexReader reader = null;
+    protected Document getDocument(final int id) throws IndexException {
         try {
-            reader = IndexReader.open( getIndexDirectory() );
-            return reader.document( id );
+            return getIndexReader().document( id );
         }
         catch (final IOException e) {
             throw new SearchException( e );
-        }
-        finally {
-            try {
-            if ( null != reader )
-                reader.close();
-            }
-            catch (final IOException e) {
-                throw new SearchException("Unable to close reader.", e );
-            }
         }
     }
 }

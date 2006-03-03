@@ -16,6 +16,7 @@ limitations under the License.
 package net.mojodna.searchable;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -94,7 +95,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
         
         try {
             // load readers and searchers
-            final Map<Class,IndexReader> readerMap = new HashMap();
+            final Map<Class,IndexReader> readerMap = new HashMap<Class,IndexReader>();
             final IndexReader[] readers = new IndexReader[ indexPaths.length ];
             final Searchable[] searchers = new Searchable[ indexPaths.length ];
             int i = 0;

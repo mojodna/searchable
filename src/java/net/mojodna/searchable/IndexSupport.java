@@ -16,6 +16,7 @@ limitations under the License.
 package net.mojodna.searchable;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -23,8 +24,9 @@ import java.util.Collection;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.IndexModifier;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -53,6 +55,8 @@ public abstract class IndexSupport {
     public static final String COMPOUND_ID_FIELD_NAME = "_cid";
     /** Prefix for keyword fields intended for sorting */
     public static final String SORTABLE_PREFIX = "_sort-";
+    /** Batch merge factor */
+    public static final int BATCH_MERGE_FACTOR = 500;
     
     /** Collection of field names internal to searchable */
     protected static final Collection PRIVATE_FIELD_NAMES = Arrays.asList( new String[] { ID_FIELD_NAME, ID_TYPE_FIELD_NAME, TYPE_FIELD_NAME, COMPOUND_ID_FIELD_NAME } );
@@ -61,17 +65,19 @@ public abstract class IndexSupport {
     
     /** Analyzer in use */
     private Analyzer analyzer = DEFAULT_ANALYZER;
+    /** Index path */
+    private String indexPath = DEFAULT_INDEX_PATH;
+    /** Is this in batch mode? */
+    private boolean batchMode;
+    
     /** Index directory */
-    private Directory indexDirectory;
-
-    /**
-     * Constructor.
-     * 
-     * @throws IndexException
-     */
-    public IndexSupport() throws IndexException {
-        setIndexPath( DEFAULT_INDEX_PATH );
-    }
+    private static Directory indexDirectory;
+    /** Shared IndexReader */
+    private static IndexReader reader;
+    /** Shared IndexModifier */
+    private static IndexModifier modifier;
+    /** Shared IndexSearcher */
+    private static IndexSearcher searcher;
     
     /**
      * Gets the index path in use.
@@ -79,33 +85,11 @@ public abstract class IndexSupport {
      * @return Index path or &lt;memory&gt; if in-memory.
      */
     public String getIndexPath() {
-        if ( getIndexDirectory() instanceof FSDirectory )
-            return ((FSDirectory) getIndexDirectory()).getFile().getAbsolutePath();
-        else
-            return "<memory>";
+    	return indexPath;
     }
     
-    /**
-     * Sets the index path to use for this index.
-     * 
-     * Note: this will always create the default index path.
-     * 
-     * @param indexPath Index path.
-     * @throws IndexException
-     */
-    public void setIndexPath(final String indexPath) throws IndexException {
-        final File indexFile = new File( indexPath );
-        // TODO only create the default path if that's the one to be used
-        if ( !indexFile.exists() ) {
-            indexFile.mkdirs();
-        }
-        
-        try {
-            setIndexDirectory( FSDirectory.getDirectory( indexFile, false ) );
-        }
-        catch (final IOException e) {
-            throw new IndexException( e );
-        }
+    public void setIndexPath(final String indexPath) {
+    	this.indexPath = indexPath;
     }
     
     /**
@@ -113,17 +97,24 @@ public abstract class IndexSupport {
      * 
      * @return Directory holding this index.
      */
-    protected Directory getIndexDirectory() {
+    protected Directory getIndexDirectory() throws IndexException {
+    	if ( null == indexDirectory ) {
+            final File indexFile = new File( getIndexPath() );
+
+            if ( !indexFile.exists() ) {
+            	// create the index directory if necessary
+                indexFile.mkdirs();
+            }
+            
+            try {
+            	indexDirectory = FSDirectory.getDirectory( indexFile, false );
+            }
+            catch (final IOException e) {
+            	throw new IndexException( e );
+            }
+    	}
+    		
         return indexDirectory;
-    }
-    
-    /**
-     * Sets the underlying Directory containing this index.
-     * 
-     * @param indexDirectory
-     */
-    protected void setIndexDirectory(final Directory indexDirectory) {
-        this.indexDirectory = indexDirectory;
     }
     
     /**
@@ -145,49 +136,21 @@ public abstract class IndexSupport {
     }
     
     /**
-     * Initialize the index without (re-)creating it.
+     * Is this running in batch mode?
      * 
-     * @throws IndexException
+     * @return Whether this indexer is running in batch mode.
      */
-    public void initialize() throws IndexException {
-        initialize( false );
+    protected boolean isBatchMode() {
+    	return batchMode;
     }
     
     /**
-     * Initialize the index.
+     * Sets whether this indexer should run in batch mode.
      * 
-     * @param createIndex (Re-)create the index.
-     * @throws IndexException
+     * @param batchMode Whether this indexer should run in batch mode.
      */
-    public void initialize(final boolean createIndex) throws IndexException {
-        log.info("Initializing index at " + getIndexPath() );
-        synchronized ( writeLock ) {
-            IndexReader reader = null;
-            try {
-                // (re-)create the index if requested
-                if ( createIndex )
-                    createIndex();
-                
-                // attempt to open an IndexReader
-                reader = IndexReader.open( getIndexDirectory() );
-            }
-            catch (final IOException e) {
-                log.debug("Could not open index: " + e.getMessage() );
-                // attempt to create the index, as it appears to not exist
-                createIndex();
-            }
-            finally {
-                if ( null != reader ) {
-                    try {
-                        reader.close();
-                    }
-                    catch (final IOException e) {
-                        log.warn("Could not close index: " + e.getMessage(), e);
-                        throw new IndexException( "Unable to initialize index.", e );
-                    }
-                }
-            }
-        }
+    protected void setBatchMode(final boolean batchMode) {
+    	this.batchMode = batchMode;
     }
     
     /**
@@ -195,28 +158,20 @@ public abstract class IndexSupport {
      * 
      * @throws IndexException
      */
-    public void createIndex() throws IndexException {
-        synchronized ( writeLock ) {
-            IndexWriter writer = null;
-            try {
-                writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), true );
-            }
-            catch (final IOException e) {
-                log.error("Could not create index: " + e.getMessage(), e);
-                throw new IndexException( "Unable to create index.", e );
-            }
-            finally {
-                if ( null != writer ) {
-                    try {
-                        writer.close();
-                    }
-                    catch (final IOException e) {
-                        log.warn("Could not close index: " + e.getMessage(), e);
-                        throw new IndexException( "Unable to create index.", e );
-                    }
-                }
-            }
-        }
+    public IndexModifier createIndex() throws IndexException {
+    	log.debug("Creating index.");
+    	try {
+        	if ( null != modifier )
+        		modifier.close();
+        	
+    		modifier = new IndexModifier( getIndexDirectory(), getAnalyzer(), true );
+    	}
+    	catch (final IOException e) {
+    		log.error("Could not create index: " + e.getMessage(), e);
+    		throw new IndexException( "Unable to create index.", e );
+    	}
+    	
+    	return modifier;
     }
     
     /**
@@ -225,7 +180,26 @@ public abstract class IndexSupport {
      * @throws IndexException
      */
     public void close() throws IndexException {
+    	if ( this instanceof BatchIndexer ) {
+    		log.debug("Flushing...");
+    		((BatchIndexer) this).flush();
+    	}
+    	
         optimizeIndex();
+        
+        try {
+        	if ( null != reader ) {
+        		reader.close();
+        		reader = null;
+        	}
+        	if ( null != modifier ) {
+        		modifier.close();
+        		modifier = null;
+        	}
+        }
+        catch (final IOException e) {
+        	throw new IndexException("Could not close index.", e);
+        }
     }
     
     /**
@@ -234,27 +208,93 @@ public abstract class IndexSupport {
      * @throws IndexException
      */
     protected void optimizeIndex() throws IndexException {
-        synchronized ( writeLock ) {
-            IndexWriter writer = null;
-            try {
-                writer = new IndexWriter( getIndexDirectory(), getAnalyzer(), false );
-                writer.optimize();
-            }
-            catch (final IOException e) {
-                log.error("Could not optimize index: " + e.getMessage(), e);
-                throw new IndexException( "Unable to optimize index.", e );
-            }
-            finally {
-                if ( null != writer ) {
-                    try {
-                        writer.close();
-                    }
-                    catch (final IOException e) {
-                        log.warn("Could not close index: " + e.getMessage(), e);
-                        throw new IndexException( "Unable to optimize index.", e );
-                    }
-                }
-            }
-        }
+    	try {
+    		getIndexModifier().optimize();
+    	}
+    	catch (final IOException e) {
+    		log.error("Could not optimize index: " + e.getMessage(), e);
+    		throw new IndexException( "Unable to optimize index.", e );
+    	}
+    }
+    
+    protected IndexReader getIndexReader() throws IndexException {
+    	try {
+    		if ( null != reader ) {
+    			// refresh if the reader is out of date
+    			// if the reader is operating on a RAMDirectory, versions will have to be compared
+    			if ( !reader.isCurrent() && !isBatchMode() ) {
+    				log.debug("Refreshing reader...");
+    				reader = IndexReader.open( getIndexDirectory() );
+    			} else {
+    				return reader;
+    			}
+    		} else {
+    			// attempt to open an IndexReader
+    			// TODO future optimization: wrap in a RAMDirectory
+    			log.debug("Creating an IndexReader...");
+    			reader = IndexReader.open( getIndexDirectory() );
+    		}
+     	}
+ 		catch (final IOException e) {
+ 			log.debug("Could not create IndexReader: " + e.getMessage() );
+ 			throw new IndexException( e );
+ 		}
+    	
+    	
+    	return reader;
+    }
+    
+    protected IndexModifier getIndexModifier() throws IndexException {
+    	if ( null != modifier ) {
+    		return modifier;
+    	} else {
+    		try {
+    			try {
+    				log.debug("Creating an IndexModifier...");
+    				modifier = new IndexModifier( getIndexDirectory(), getAnalyzer(), false );
+    			}
+    			catch (final FileNotFoundException e) {
+    				// a failure opening a non-existent index causes it to be locked anyway
+    				IndexReader.unlock( getIndexDirectory() );
+    				modifier = createIndex();
+    			}
+    			
+				if ( isBatchMode() )
+					modifier.setMergeFactor( BATCH_MERGE_FACTOR );
+				
+				return modifier;
+    		}
+    		catch (final IOException e) {
+    			log.error("Could not create IndexModifier: " + e.getMessage(), e);
+    			throw new IndexException( "Could not create IndexModifier.", e );
+    		}
+    	}
+    }
+    
+    protected IndexSearcher getIndexSearcher() throws IndexException {
+    	// TODO refactor
+    	try {
+    		if ( null != searcher ) {
+    			if ( !searcher.getIndexReader().isCurrent() )
+    				searcher = new IndexSearcher( getIndexReader() );
+    		} else {
+    			searcher = new IndexSearcher( getIndexReader() );
+    		}
+    	}
+    	catch (final IOException e) {
+    		throw new IndexException("Could not create IndexSearcher.", e);
+    	}
+    	
+    	return searcher;
+    }
+    
+    @Override
+    protected void finalize() {
+    	try {
+    		close();
+    	}
+    	catch (final IndexException e) {
+    		log.warn("Exception while finalizing.", e);
+    	}
     }
 }

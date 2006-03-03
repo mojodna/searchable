@@ -27,7 +27,7 @@ public interface Indexer<E> {
      * @param object Object to index.
      * @throws IndexingException
      */
-    public void add(E object) throws IndexingException;
+    public void add(E object) throws IndexException;
     
     /**
      * Deletes an object from the index.
@@ -35,5 +35,7 @@ public interface Indexer<E> {
      * @param object Object to delete.
      * @throws IndexingException
      */
-    public void delete(E object) throws IndexingException;
+    public void delete(E object) throws IndexException;
+    
+    // TODO add close, optimize methods
 }

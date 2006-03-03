@@ -13,25 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package net.mojodna.searchable.util;
-
-import net.mojodna.searchable.SearchException;
-
-import org.apache.lucene.search.Query;
+package net.mojodna.searchable;
 
 /**
- * Thrown by MultiFieldQueryPreparer when it encounters a Query type that is
- * not recognized.
+ * Batch indexer interface.
  * 
  * @author Seth Fitzsimmons
  */
-public class UnanticipatedQueryException extends SearchException {
-    /**
-     * Constructor with a Query.
-     * 
-     * @param query Query that caused the problem.
-     */
-    public UnanticipatedQueryException(final Query query) {
-        super("Unanticipated query type: " + query.getClass().getName() );
-    }
+public interface BatchIndexer<E> extends Indexer<E> {
+	public void flush() throws IndexException;
 }

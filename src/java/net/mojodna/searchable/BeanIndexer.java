@@ -36,7 +36,7 @@ public class BeanIndexer extends AbstractBeanIndexer implements Indexer<Searchab
      * @param bean Bean to index.
      * @throws IndexingException
      */
-    public void add(final Searchable bean) throws IndexingException {
+    public void add(final Searchable bean) throws IndexException {
         doAdd( bean );
     }
     
@@ -45,7 +45,7 @@ public class BeanIndexer extends AbstractBeanIndexer implements Indexer<Searchab
      * 
      * @param bean Object to delete.
      */
-    public void delete(final Searchable bean) throws IndexingException {
+    public void delete(final Searchable bean) throws IndexException {
         doDelete( bean );
     }
 }

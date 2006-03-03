@@ -48,13 +48,8 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
     /** List of annotations used for indexing (does not include sorting) */
     private static final Class[] annotations = { Indexed.class, Stored.class };
     
-    /**
-     * Constructor.
-     * 
-     * @throws IndexException
-     */
-    public AbstractBeanIndexer() throws IndexException {
-        super();
+    protected Document doCreate(final Searchable bean) throws IndexingException {
+    	return createDocument( getType( bean ), getId( bean ) );
     }
     
     /**
@@ -63,7 +58,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @param bean Bean to index.
      * @throws IndexingException
      */
-    protected void doAdd(final Searchable bean) throws IndexingException {
+    protected void doAdd(final Searchable bean) throws IndexException {
         // process a Searchable
         final Document doc = createDocument( getType( bean ), getId( bean ) );
         
@@ -77,7 +72,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * 
      * @param bean Object to delete.
      */
-    protected void doDelete(final Searchable bean) throws IndexingException {
+    protected void doDelete(final Searchable bean) throws IndexException {
         delete( getType( bean ), getId( bean ) );
     }
     
@@ -108,13 +103,18 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
     }
     
     /**
-     * Gets the type of the object being indexed.
+     * Gets the type of the object being indexed.  If a class has been enhanced
+     * by CGLIB, the base class name is returned.
      * 
      * @param bean Object being indexed.
      * @return Type of the object being indexed.
      */
     protected String getType(final Searchable bean) {
-        return bean.getClass().getName();
+    	if ( bean.getClass().getName().contains("$$EnhancerByCGLIB$$") ) {
+    		return bean.getClass().getName().substring(0, bean.getClass().getName().indexOf("$$EnhancerByCGLIB$$") );
+    	} else {
+    		return bean.getClass().getName();
+    	}
     }
     
     /**
@@ -126,7 +126,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
     private boolean containsIndexAnnotations(final PropertyDescriptor descriptor) {
         final Method readMethod = descriptor.getReadMethod();
         
-        for ( final Class annotationClass : annotations ) {
+        for ( final Class<? extends Annotation> annotationClass : annotations ) {
             if ( AnnotationUtils.isAnnotationPresent( readMethod, annotationClass ) )
                 return true;
         }
@@ -189,11 +189,11 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @return Collection of field names.
      */
     private Collection<String> getFieldnames(final PropertyDescriptor descriptor) {
-        final Collection<String> fieldnames = new LinkedList();
+        final Collection<String> fieldnames = new LinkedList<String>();
         
         String fieldname = descriptor.getName();
         
-        for ( final Class annotationClass : annotations ) {
+        for ( final Class<? extends Annotation> annotationClass : annotations ) {
             final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
             if ( annotation instanceof Searchable.Indexed ) {
                 final Searchable.Indexed i = (Searchable.Indexed) annotation;
@@ -229,7 +229,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @return Whether this property should be treated as nested.
      */
     private boolean isNested(final PropertyDescriptor descriptor) {
-        for ( final Class annotationClass : annotations ) {
+        for ( final Class<? extends Annotation> annotationClass : annotations ) {
             final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
             if ( annotation instanceof Indexed ) {
                 final Indexed i = (Indexed) annotation;
@@ -258,7 +258,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @return Boost factor for a specified property.
      */
     private float getBoost(final PropertyDescriptor descriptor) {
-        for ( final Class annotationClass : annotations ) {
+        for ( final Class<? extends Annotation> annotationClass : annotations ) {
             final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
             if ( annotation instanceof Searchable.Indexed ) {
                 final Searchable.Indexed i = (Searchable.Indexed) annotation;
@@ -300,7 +300,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @return Whether the specified property should be stored in the index.
      */
     private boolean isStored(final PropertyDescriptor descriptor) {
-        for ( final Class annotationClass : annotations ) {
+        for ( final Class<? extends Annotation> annotationClass : annotations ) {
             final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
             if ( annotation instanceof Searchable.Indexed ) {
                 return ((Searchable.Indexed) annotation).stored();
@@ -335,7 +335,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @throws IndexingException
      */
     protected Document processBean(final Document doc, final Searchable bean) throws IndexingException {
-        return processBean( doc, bean, new Stack() );
+        return processBean( doc, bean, new Stack<String>() );
     }
     
     /**
@@ -386,7 +386,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      */
     private Document addBeanFields(final Document doc, final Searchable bean, final PropertyDescriptor descriptor, final Stack<String> stack, final float inheritedBoost) throws IndexingException {
         final Method readMethod = descriptor.getReadMethod();
-        for ( final Class annotationClass : annotations ) {
+        for ( final Class<? extends Annotation> annotationClass : annotations ) {
             if ( null != readMethod && AnnotationUtils.isAnnotationPresent( readMethod, annotationClass ) ) {
                 
                 // don't index elements marked as nested=false in a nested context
