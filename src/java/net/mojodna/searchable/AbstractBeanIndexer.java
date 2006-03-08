@@ -48,6 +48,13 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
     /** List of annotations used for indexing (does not include sorting) */
     private static final Class[] annotations = { Indexed.class, Stored.class };
     
+    /**
+     * Convenience method for creating Documents.
+     * 
+     * @param bean Searchable object to create a document based on.
+     * @return Document.
+     * @throws IndexingException
+     */
     protected Document doCreate(final Searchable bean) throws IndexingException {
     	return createDocument( getType( bean ), getId( bean ) );
     }
@@ -245,6 +252,12 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
         return false;
     }
     
+    /**
+     * Should this property be treated as a nested Sortable?
+     * 
+     * @param descriptor Property descriptor.
+     * @return Whether this property should be treated as a nested Sortable.
+     */
     private boolean isNestedSortable(final PropertyDescriptor descriptor) {
         final Searchable.Sortable annotation = (Searchable.Sortable) AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Sortable.class );
         if ( null != annotation )
