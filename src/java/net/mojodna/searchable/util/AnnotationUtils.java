@@ -19,6 +19,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * Annotation utility methods.
@@ -26,6 +29,8 @@ import java.util.HashSet;
  * @author Seth Fitzsimmons
  */
 public class AnnotationUtils {
+	private static Map<AnnotationKey,Annotation> annotationCache = new ConcurrentHashMap<AnnotationKey,Annotation>();
+	
     /**
      * Get a specific annotation present on a method.
      * 
@@ -37,24 +42,36 @@ public class AnnotationUtils {
      * @see java.lang.reflect.AnnotatedElement#getAnnotations()
      * 
      * @param method Method to check for present annotations.
-     * @param annotation Annotation to look for.
+     * @param annotationClass Annotation to look for.
      * @return Instance of the specified annotation or null if not present.
      */
-    public static Annotation getAnnotation(final Method method, final Class<? extends Annotation> annotation) {
-        if ( null == method || null == annotation )
+    public static Annotation getAnnotation(final Method method, final Class<? extends Annotation> annotationClass) {
+    	final AnnotationKey key = new AnnotationKey( method, annotationClass );
+    	if ( null != method && annotationCache.containsKey( key ) ) {
+    		return annotationCache.get( key );
+    	}
+    	
+        if ( null == method || null == annotationClass )
             return null;
 
+        Annotation annotation = null;
+        
         // check all superclasses and inherited interfaces
         for ( final Class c : AnnotationUtils.getClasses( method.getDeclaringClass() ) ) {
             try {
                 final Method m = c.getMethod( method.getName(), (Class[]) method.getParameterTypes() );
-                if ( m.isAnnotationPresent( annotation ) )
-                    return m.getAnnotation( annotation );
+                if ( m.isAnnotationPresent( annotationClass ) ) {
+                	annotation = m.getAnnotation( annotationClass );
+                }
             }
             catch (final NoSuchMethodException e) {}
         }
         
-        return null;
+        if ( null != annotation ) {
+        	annotationCache.put( key, annotation );
+        }
+        
+        return annotation;
     }
     
     /**
@@ -86,28 +103,39 @@ public class AnnotationUtils {
      * @see java.lang.reflect.AnnotatedElement#getAnnotations()
      * 
      * @param clazz Class to check for present annotations.
-     * @param annotation Annotation to look for.
+     * @param annotationClass Annotation class to look for.
      * @param includeMethods Whether to include methods when searching.
      * @return Instance of the specified annotation or null if not present.
      */
-    public static Annotation getAnnotation(Class clazz, final Class<? extends Annotation> annotation, final boolean includeMethods) {
-        if ( null == clazz || null == annotation )
+    public static Annotation getAnnotation(Class clazz, final Class<? extends Annotation> annotationClass, final boolean includeMethods) {
+    	final AnnotationKey key = new AnnotationKey( clazz, annotationClass );
+    	if ( null != clazz && annotationCache.containsKey( key ) ) {
+    		return annotationCache.get( key );
+    	}
+    	
+        if ( null == clazz || null == annotationClass )
             return null;
+        
+        Annotation annotation = null;
         
         if ( includeMethods ) {
             for (final Method m : clazz.getMethods() ) {
-                if ( isAnnotationPresent( m, annotation ) )
-                    return getAnnotation( m, annotation );
+                if ( isAnnotationPresent( m, annotationClass ) )
+                    annotation = getAnnotation( m, annotationClass );
             }
         }
 
         // check all superclasses and inherited interfaces
         for ( final Class c : AnnotationUtils.getClasses( clazz ) ) {
-            if ( c.isAnnotationPresent( annotation ) )
-                return c.getAnnotation( annotation );
+            if ( c.isAnnotationPresent( annotationClass ) )
+                annotation = c.getAnnotation( annotationClass );
         }
         
-        return null;
+        if ( null != annotation ) {
+        	annotationCache.put( key, annotation );
+        }
+        
+        return annotation;
     }
     
     /**
@@ -158,7 +186,7 @@ public class AnnotationUtils {
      * @return Collection of classes extended and interfaces implemented.
      */
     private static Collection<Class> getClasses(Class clazz) {
-        final Collection<Class> classes = new HashSet();
+        final Collection<Class> classes = new HashSet<Class>();
         while ( null != clazz ) {
             classes.add( clazz );
             
