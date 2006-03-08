@@ -140,7 +140,7 @@ public abstract class IndexSupport {
      * 
      * @return Whether this indexer is running in batch mode.
      */
-    protected boolean isBatchMode() {
+    public boolean isBatchMode() {
     	return batchMode;
     }
     
@@ -149,7 +149,7 @@ public abstract class IndexSupport {
      * 
      * @param batchMode Whether this indexer should run in batch mode.
      */
-    protected void setBatchMode(final boolean batchMode) {
+    public void setBatchMode(final boolean batchMode) {
     	this.batchMode = batchMode;
     }
     

@@ -27,4 +27,11 @@ public interface BatchIndexer<E> extends Indexer<E> {
 	 * @throws IndexException
 	 */
 	public void flush() throws IndexException;
+	
+	/**
+	 * Sets whether this indexer is running in batch mode.
+	 * 
+	 * @param batchMode Whether this indexer should run in batch mode.
+	 */
+	public void setBatchMode(boolean batchMode);
 }
