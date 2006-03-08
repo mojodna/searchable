@@ -33,7 +33,7 @@ limitations under the License.
 
     <!-- application information -->
     <property name="app.name" value="searchable" />
-    <property name="app.version" value="0.6.1-dev" />
+    <property name="app.version" value="0.6.1" />
 
     <!-- The base directory for distribution targets -->
     <property name="dist.dir" value="dist/" />
