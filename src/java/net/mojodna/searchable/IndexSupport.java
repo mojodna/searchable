@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexModifier;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -288,7 +289,7 @@ public abstract class IndexSupport {
      * @return IndexSearcher associated with this index.
      * @throws IndexException
      */
-    protected IndexSearcher getIndexSearcher() throws IndexException {
+    protected Searcher getIndexSearcher() throws IndexException {
     	try {
     		if ( !searchers.containsKey( getIndexPath() ) || !searchers.get( getIndexPath() ).getIndexReader().isCurrent() ) {
     			searchers.put( getIndexPath(), new IndexSearcher( getIndexReader() ) );
