@@ -29,6 +29,13 @@ public interface BatchIndexer<E> extends Indexer<E> {
 	public void flush() throws IndexException;
 	
 	/**
+	 * Is this running in batch mode?
+	 * 
+	 * @return Whether this indexer is running in batch mode.
+	 */
+	public boolean isBatchMode();
+	
+	/**
 	 * Sets whether this indexer is running in batch mode.
 	 * 
 	 * @param batchMode Whether this indexer should run in batch mode.
