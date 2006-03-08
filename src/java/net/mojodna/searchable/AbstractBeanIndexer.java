@@ -126,12 +126,14 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
     private boolean containsIndexAnnotations(final PropertyDescriptor descriptor) {
         final Method readMethod = descriptor.getReadMethod();
         
+        boolean containsIndexAnnotations = false;
+        
         for ( final Class<? extends Annotation> annotationClass : annotations ) {
             if ( AnnotationUtils.isAnnotationPresent( readMethod, annotationClass ) )
-                return true;
+            	containsIndexAnnotations = true;
         }
         
-        return false;
+        return containsIndexAnnotations;
     }
     
     /**
@@ -258,13 +260,11 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @return Boost factor for a specified property.
      */
     private float getBoost(final PropertyDescriptor descriptor) {
-        for ( final Class<? extends Annotation> annotationClass : annotations ) {
-            final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
-            if ( annotation instanceof Searchable.Indexed ) {
-                final Searchable.Indexed i = (Searchable.Indexed) annotation;
-                return i.boost();
-            }
-        }
+    	final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Indexed.class );
+    	if ( annotation instanceof Searchable.Indexed ) {
+    		final Searchable.Indexed i = (Searchable.Indexed) annotation;
+    		return i.boost();
+    	}
         
         return DEFAULT_BOOST_VALUE;
     }
