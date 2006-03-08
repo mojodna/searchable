@@ -20,6 +20,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -68,14 +70,14 @@ public abstract class IndexSupport {
     /** Is this in batch mode? */
     private boolean batchMode;
     
-    /** Index directory */
-    private Directory indexDirectory;
-    /** Shared IndexReader */
-    private IndexReader reader;
-    /** Shared IndexModifier */
-    private IndexModifier modifier;
-    /** Shared IndexSearcher */
-    private IndexSearcher searcher;
+    /** Shared index directories */
+    private static Map<String,Directory> indexDirectories = new ConcurrentHashMap<String, Directory>();
+    /** Shared IndexReaders */
+    private static Map<String,IndexReader> readers = new ConcurrentHashMap<String, IndexReader>();
+    /** Shared IndexModifiers */
+    private static Map<String,IndexModifier> modifiers = new ConcurrentHashMap<String, IndexModifier>();
+    /** Shared IndexSearchers */
+    private static Map<String,IndexSearcher> searchers = new ConcurrentHashMap<String, IndexSearcher>();
     
     /**
      * Gets the index path in use.
@@ -96,7 +98,7 @@ public abstract class IndexSupport {
      * @return Directory holding this index.
      */
     protected Directory getIndexDirectory() throws IndexException {
-    	if ( null == indexDirectory ) {
+    	if ( !indexDirectories.containsKey( getIndexPath() ) ) {
             final File indexFile = new File( getIndexPath() );
 
             if ( !indexFile.exists() ) {
@@ -105,14 +107,14 @@ public abstract class IndexSupport {
             }
             
             try {
-            	indexDirectory = FSDirectory.getDirectory( indexFile, false );
+            	indexDirectories.put( getIndexPath(), FSDirectory.getDirectory( indexFile, false ) );
             }
             catch (final IOException e) {
             	throw new IndexException( e );
             }
     	}
     		
-        return indexDirectory;
+        return indexDirectories.get( getIndexPath() );
     }
     
     /**
@@ -159,17 +161,17 @@ public abstract class IndexSupport {
     public IndexModifier createIndex() throws IndexException {
     	log.debug("Creating index.");
     	try {
-        	if ( null != modifier )
-        		modifier.close();
+        	if ( modifiers.containsKey( getIndexPath() ) )
+        		modifiers.get( getIndexPath() ).close();
         	
-    		modifier = new IndexModifier( getIndexDirectory(), getAnalyzer(), true );
+    		modifiers.put( getIndexPath(), new IndexModifier( getIndexDirectory(), getAnalyzer(), true ) );
     	}
     	catch (final IOException e) {
     		log.error("Could not create index: " + e.getMessage(), e);
     		throw new IndexException( "Unable to create index.", e );
     	}
     	
-    	return modifier;
+    	return modifiers.get( getIndexPath() );
     }
     
     /**
@@ -186,13 +188,13 @@ public abstract class IndexSupport {
         optimizeIndex();
         
         try {
-        	if ( null != reader ) {
-        		reader.close();
-        		reader = null;
+        	if ( readers.containsKey( getIndexPath() ) ) {
+        		readers.get( getIndexPath() ).close();
+        		readers.remove( getIndexPath() );
         	}
-        	if ( null != modifier ) {
-        		modifier.close();
-        		modifier = null;
+        	if ( modifiers.containsKey( getIndexPath() ) ) {
+        		modifiers.get( getIndexPath() ).close();
+        		modifiers.remove( getIndexPath() );
         	}
         }
         catch (final IOException e) {
@@ -215,22 +217,27 @@ public abstract class IndexSupport {
     	}
     }
     
+    /**
+     * Gets the IndexReader associated with this index, refreshing the reader
+     * if it has become out of date.
+     * 
+     * @return IndexReader associated with this index.
+     * @throws IndexException
+     */
     protected IndexReader getIndexReader() throws IndexException {
     	try {
-    		if ( null != reader ) {
+    		if ( readers.containsKey( getIndexPath() ) ) {
     			// refresh if the reader is out of date
     			// if the reader is operating on a RAMDirectory, versions will have to be compared
-    			if ( !reader.isCurrent() && !isBatchMode() ) {
+    			if ( !readers.get( getIndexPath() ).isCurrent() && !isBatchMode() ) {
     				log.debug("Refreshing reader...");
-    				reader = IndexReader.open( getIndexDirectory() );
-    			} else {
-    				return reader;
+    				readers.put( getIndexPath(), IndexReader.open( getIndexDirectory() ) );
     			}
     		} else {
     			// attempt to open an IndexReader
     			// TODO future optimization: wrap in a RAMDirectory
     			log.debug("Creating an IndexReader...");
-    			reader = IndexReader.open( getIndexDirectory() );
+    			readers.put( getIndexPath(), IndexReader.open( getIndexDirectory() ) );
     		}
      	}
  		catch (final IOException e) {
@@ -239,28 +246,34 @@ public abstract class IndexSupport {
  		}
     	
     	
-    	return reader;
+    	return readers.get( getIndexPath() );
     }
     
+    /**
+     * Gets the IndexModifier associated with this index, creating the index if necessary.
+     * 
+     * @return IndexModifier associated with this index.
+     * @throws IndexException
+     */
     protected IndexModifier getIndexModifier() throws IndexException {
-    	if ( null != modifier ) {
-    		return modifier;
+    	if ( modifiers.containsKey( getIndexPath() ) ) {
+    		return modifiers.get( getIndexPath() );
     	} else {
     		try {
     			try {
     				log.debug("Creating an IndexModifier...");
-    				modifier = new IndexModifier( getIndexDirectory(), getAnalyzer(), false );
+    				modifiers.put( getIndexPath(), new IndexModifier( getIndexDirectory(), getAnalyzer(), false ) );
     			}
     			catch (final FileNotFoundException e) {
     				// a failure opening a non-existent index causes it to be locked anyway
     				IndexReader.unlock( getIndexDirectory() );
-    				modifier = createIndex();
+    				modifiers.put( getIndexPath(), createIndex() );
     			}
     			
 				if ( isBatchMode() )
-					modifier.setMergeFactor( BATCH_MERGE_FACTOR );
+					modifiers.get( getIndexPath() ).setMergeFactor( BATCH_MERGE_FACTOR );
 				
-				return modifier;
+				return modifiers.get( getIndexPath() );
     		}
     		catch (final IOException e) {
     			log.error("Could not create IndexModifier: " + e.getMessage(), e);
@@ -269,21 +282,23 @@ public abstract class IndexSupport {
     	}
     }
     
+    /**
+     * Gets the IndexSearcher associated with this index.
+     * 
+     * @return IndexSearcher associated with this index.
+     * @throws IndexException
+     */
     protected IndexSearcher getIndexSearcher() throws IndexException {
-    	// TODO refactor
     	try {
-    		if ( null != searcher ) {
-    			if ( !searcher.getIndexReader().isCurrent() )
-    				searcher = new IndexSearcher( getIndexReader() );
-    		} else {
-    			searcher = new IndexSearcher( getIndexReader() );
+    		if ( !searchers.containsKey( getIndexPath() ) || !searchers.get( getIndexPath() ).getIndexReader().isCurrent() ) {
+    			searchers.put( getIndexPath(), new IndexSearcher( getIndexReader() ) );
     		}
     	}
     	catch (final IOException e) {
     		throw new IndexException("Could not create IndexSearcher.", e);
     	}
     	
-    	return searcher;
+    	return searchers.get( getIndexPath() );
     }
     
     @Override
