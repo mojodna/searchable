@@ -52,8 +52,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
      * @throws IndexException
      */
     // TODO add constructor with default fields to use
-    public AbstractMultiSearcher(final String[] indexPaths) throws IndexException {
-        super();
+    public AbstractMultiSearcher(final String[] indexPaths) {
         this.indexPaths = indexPaths;
     }
     
@@ -67,9 +66,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
      * default fields.
      * @throws IndexException
      */
-    public AbstractMultiSearcher(final String[] indexPaths, final Class[] classes) throws IndexException {
-        super();
-
+    public AbstractMultiSearcher(final String[] indexPaths, final Class[] classes) {
         if ( indexPaths.length != classes.length )
             throw new IllegalArgumentException("Array lengths must be equal.");
         
