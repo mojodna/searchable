@@ -60,8 +60,6 @@ public abstract class IndexSupport {
     
     /** Collection of field names internal to searchable */
     protected static final Collection PRIVATE_FIELD_NAMES = Arrays.asList( new String[] { ID_FIELD_NAME, ID_TYPE_FIELD_NAME, TYPE_FIELD_NAME, COMPOUND_ID_FIELD_NAME } );
-    /** A write lock to ensure that writing to the index is done in a synchronized manner */
-    protected static Object writeLock = new Object();
     
     /** Analyzer in use */
     private Analyzer analyzer = DEFAULT_ANALYZER;
@@ -71,18 +69,18 @@ public abstract class IndexSupport {
     private boolean batchMode;
     
     /** Index directory */
-    private static Directory indexDirectory;
+    private Directory indexDirectory;
     /** Shared IndexReader */
-    private static IndexReader reader;
+    private IndexReader reader;
     /** Shared IndexModifier */
-    private static IndexModifier modifier;
+    private IndexModifier modifier;
     /** Shared IndexSearcher */
-    private static IndexSearcher searcher;
+    private IndexSearcher searcher;
     
     /**
      * Gets the index path in use.
      * 
-     * @return Index path or &lt;memory&gt; if in-memory.
+     * @return Index path.
      */
     public String getIndexPath() {
     	return indexPath;
