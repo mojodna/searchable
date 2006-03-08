@@ -15,6 +15,7 @@ limitations under the License.
 */
 package net.mojodna.searchable;
 
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 
@@ -43,6 +44,18 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
     public ResultSet<Searchable> search(final Query query) throws IndexException {
         return doSearch( query );
     }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final Query query, final Filter filter) throws IndexException {
+        return doSearch( query, filter );
+    }
     
     /**
      * Search the index with the specified query.
@@ -55,6 +68,20 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      */
     public ResultSet<Searchable> search(final Query query, final Integer offset, final Integer count) throws IndexException {
         return doSearch( query, offset, count );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final Query query, final Filter filter, final Integer offset, final Integer count) throws IndexException {
+        return doSearch( query, filter, offset, count );
     }
     
     /**
@@ -75,6 +102,22 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final Query query, final Filter filter, final Integer offset, final Integer count, final String sortField) throws IndexException {
+        return doSearch( query, filter, offset, count, sortField );
+    }
+
+    
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
      * @param sortField Field to sort by.
@@ -84,6 +127,22 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      */
     public ResultSet<Searchable> search(final Query query, final Integer offset, final Integer count, final String sortField, final boolean reverse) throws IndexException {
         return doSearch( query, offset, count, sortField, reverse );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @param reverse Whether to reverse the resultset. 
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final Query query, final Filter filter, final Integer offset, final Integer count, final String sortField, final boolean reverse) throws IndexException {
+        return doSearch( query, filter, offset, count, sortField, reverse );
     }
     
     /**
@@ -101,12 +160,37 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final String query, final Filter filter) throws IndexException {
+        return doSearch( query, filter );
+    }
+    
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param sortField Field to sort by.
      * @return ResultSet containing results.
      * @throws SearchException
      */
     public ResultSet<Searchable> search(final String query, final String sortField) throws IndexException {
         return doSearch( query, sortField );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param sortField Field to sort by.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final String query, final Filter filter, final String sortField) throws IndexException {
+        return doSearch( query, filter, sortField );
     }
     
     /**
@@ -119,6 +203,19 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      */
     public ResultSet<Searchable> search(final String query, final Sort sort) throws IndexException {
         return doSearch( query, sort );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param sort Sort to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final String query, final Filter filter, final Sort sort) throws IndexException {
+        return doSearch( query, filter, sort );
     }
     
     /**
@@ -133,7 +230,21 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
     public ResultSet<Searchable> search(final String query, final Integer offset, final Integer count)  throws IndexException {
         return doSearch( query, offset, count );
     }
-    
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final String query, final Filter filter, final Integer offset, final Integer count)  throws IndexException {
+        return doSearch( query, filter, offset, count );
+    }
+
     /**
      * Search the index with the specified query.
      * 
@@ -152,6 +263,21 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final String query, final Filter filter, final Integer offset, final Integer count, final String sortField)  throws IndexException {
+        return doSearch( query, filter, offset, count, sortField );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
      * @param sortField Field to sort by.
@@ -160,9 +286,25 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @throws SearchException
      */
     public ResultSet<Searchable> search(final String query, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
-        return doSearch( query ,offset, count, sortField, reverse );
+        return doSearch( query, offset, count, sortField, reverse );
     }
     
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @param reverse Whether to reverse the resultset. 
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final String query, final Filter filter, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
+        return doSearch( query, filter, offset, count, sortField, reverse );
+    }
+
     /**
      * Search the index with the specified query.
      * 
@@ -175,5 +317,20 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      */
     public ResultSet<Searchable> search(final String query, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
         return doSearch( query, offset, count, sort );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sort Sort to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet<Searchable> search(final String query, final Filter filter, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
+        return doSearch( query, filter, offset, count, sort );
     }
 }

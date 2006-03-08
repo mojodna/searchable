@@ -16,7 +16,6 @@ limitations under the License.
 package net.mojodna.searchable;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,6 +27,7 @@ import net.mojodna.searchable.util.AnnotationUtils;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.Query;
@@ -76,7 +76,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
         this.indexPaths = indexPaths;
         this.classes = classes;
     }
-    
+
     /**
      * Search the index with the specified query.  Overrides AbstractSearcher's
      * default behavior.
@@ -90,6 +90,22 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
      */
     @Override
     public ResultSet doSearch(final String query, final Integer offset, final Integer count, final Sort sort) throws SearchException {
+    	return doSearch( query, (Filter) null, offset, count, sort );
+    }
+    
+    /**
+     * Search the index with the specified query.  Overrides AbstractSearcher's
+     * default behavior.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sort Sort to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    public ResultSet doSearch(final String query, final Filter filter, final Integer offset, final Integer count, final Sort sort) throws SearchException {
         MultiReader mr = null;
         MultiSearcher ms = null;
         
@@ -135,7 +151,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
 
             // use the overloaded doSearch method with the MultiSearcher
             // constructed previously
-            return doSearch( q, ms, offset, count, sort );
+            return doSearch( q, filter, ms, offset, count, sort );
         }
         catch (final IOException e) {
             throw new SearchException( e );

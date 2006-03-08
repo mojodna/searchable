@@ -37,8 +37,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
 import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
@@ -220,6 +220,17 @@ public abstract class AbstractSearcher extends IndexSupport {
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @return ResultSet containing results.
+     */
+    protected ResultSet doSearch(final Query query, final Filter filter) throws IndexException {
+        return doSearch( query, filter, 0, null );
+    }
+    
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
      * @return ResultSet containing results.
@@ -227,6 +238,20 @@ public abstract class AbstractSearcher extends IndexSupport {
      */
     protected ResultSet doSearch(final Query query, final Integer offset, final Integer count) throws IndexException {
         return doSearch( query, offset, count, Sort.RELEVANCE );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final Query query, final Filter filter, final Integer offset, final Integer count) throws IndexException {
+        return doSearch( query, filter, offset, count, Sort.RELEVANCE );
     }
     
     /**
@@ -245,6 +270,25 @@ public abstract class AbstractSearcher extends IndexSupport {
         if ( StringUtils.isNotBlank( sortField )) 
             sort = new Sort( IndexSupport.SORTABLE_PREFIX + sortField );
         return doSearch( query, offset, count, sort );
+    }
+    
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    // TODO add support for String[] sortFields
+    protected ResultSet doSearch(final Query query, final Filter filter, final Integer offset, final Integer count, final String sortField) throws IndexException {
+        Sort sort = Sort.RELEVANCE;
+        if ( StringUtils.isNotBlank( sortField )) 
+            sort = new Sort( IndexSupport.SORTABLE_PREFIX + sortField );
+        return doSearch( query, filter, offset, count, sort );
     }
 
     /**
@@ -270,6 +314,26 @@ public abstract class AbstractSearcher extends IndexSupport {
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @param reverse Whether to reverse the resultset. 
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final Query query, final Filter filter, final Integer offset, final Integer count, final String sortField, final boolean reverse) throws IndexException {
+        Sort sort = Sort.RELEVANCE;
+        if ( StringUtils.isNotBlank( sortField )) 
+            sort = new Sort( IndexSupport.SORTABLE_PREFIX + sortField, reverse );
+
+        return doSearch( query, filter, offset, count, sort );
+    }
+    
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
      * @param sort Sort to use.
@@ -277,8 +341,23 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected ResultSet doSearch(final Query query, final Integer offset, final Integer count, final Sort sort) throws IndexException {
+    	return doSearch( query, null, offset, count, sort );
+    }
+    
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sort Sort to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final Query query, final Filter filter, final Integer offset, final Integer count, final Sort sort) throws IndexException {
         try {
-            return doSearch( query, getIndexSearcher(), offset, count, sort );
+            return doSearch( query, filter, getIndexSearcher(), offset, count, sort );
         }
         catch (final IOException e) {
             throw new SearchException( e );
@@ -289,6 +368,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
      * @param searcher Lucene Searcher to perform the search with.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
@@ -296,10 +376,10 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @return ResultSet containing results.
      * @throws SearchException
      */
-    protected ResultSet doSearch(final Query query, final Searcher searcher, final Integer offset, final Integer count, final Sort sort) throws SearchException, IOException {
+    protected ResultSet doSearch(final Query query, final Filter filter, final Searcher searcher, final Integer offset, final Integer count, final Sort sort) throws SearchException, IOException {
     	// execute the search
     	log.debug("Searching with query: " + query.toString() );
-    	final Hits hits = searcher.search(query, sort);
+    	final Hits hits = searcher.search(query, filter, sort);
 
     	// create a container for results
     	final List<Result> results = new LinkedList<Result>();
@@ -451,11 +531,34 @@ public abstract class AbstractSearcher extends IndexSupport {
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @return ResultSet containing results.
+     */
+    protected ResultSet doSearch(final String query, final Filter filter) throws IndexException {
+        return doSearch( query, filter, 0, null );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param clazz Type of object being searched for.
      * @return ResultSet containing results.
      */
     protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz) throws IndexException {
         return doSearch( query, clazz, 0, null );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param clazz Type of object being searched for.
+     * @return ResultSet containing results.
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Class<? extends Searchable> clazz) throws IndexException {
+        return doSearch( query, filter, clazz, 0, null );
     }
     
     /**
@@ -474,6 +577,19 @@ public abstract class AbstractSearcher extends IndexSupport {
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @param sortField Field to sort by.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final String sortField) throws IndexException {
+        return doSearch( query, filter, 0, null, sortField );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param clazz Type of object being searched for.
      * @param sortField Field to sort by.
      * @return ResultSet containing results.
@@ -481,6 +597,20 @@ public abstract class AbstractSearcher extends IndexSupport {
      */
     protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final String sortField) throws IndexException {
         return doSearch( query, clazz, 0, null, sortField );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param clazz Type of object being searched for.
+     * @param sortField Field to sort by.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Class<? extends Searchable> clazz, final String sortField) throws IndexException {
+        return doSearch( query, filter, clazz, 0, null, sortField );
     }
     
     /**
@@ -493,6 +623,19 @@ public abstract class AbstractSearcher extends IndexSupport {
      */
     protected ResultSet doSearch(final String query, final Sort sort) throws IndexException {
         return doSearch( query, 0, null, sort );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param sort Sort to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Sort sort) throws IndexException {
+        return doSearch( query, filter, 0, null, sort );
     }
 
     /**
@@ -512,6 +655,20 @@ public abstract class AbstractSearcher extends IndexSupport {
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @param clazz Type of object being searched for.
+     * @param sort Sort to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Class<? extends Searchable> clazz, final Sort sort) throws IndexException {
+        return doSearch( query, filter, clazz, 0, null, sort );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
      * @return ResultSet containing results.
@@ -519,6 +676,20 @@ public abstract class AbstractSearcher extends IndexSupport {
      */
     protected ResultSet doSearch(final String query, final Integer offset, final Integer count)  throws IndexException {
         return doSearch( query, offset, count, Sort.RELEVANCE );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Integer offset, final Integer count)  throws IndexException {
+        return doSearch( query, filter, offset, count, Sort.RELEVANCE );
     }
 
     /**
@@ -539,6 +710,21 @@ public abstract class AbstractSearcher extends IndexSupport {
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @param clazz Type of object being searched for.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Class<? extends Searchable> clazz, final Integer offset, final Integer count)  throws IndexException {
+        return doSearch( query, filter, clazz, offset, count, Sort.RELEVANCE );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
      * @param sortField Field to sort by.
@@ -547,6 +733,21 @@ public abstract class AbstractSearcher extends IndexSupport {
      */
     protected ResultSet doSearch(final String query, final Integer offset, final Integer count, final String sortField)  throws IndexException {
         return doSearch( query, offset, count, sortField, false );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Integer offset, final Integer count, final String sortField)  throws IndexException {
+        return doSearch( query, filter, offset, count, sortField, false );
     }
     
     /**
@@ -568,6 +769,22 @@ public abstract class AbstractSearcher extends IndexSupport {
      * Search the index with the specified query.
      * 
      * @param query Query to use.
+     * @param filter Filter to use.
+     * @param clazz Type of object being searched for.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final String sortField)  throws IndexException {
+        return doSearch( query, filter, clazz, offset, count, sortField, false );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
      * @param offset Offset to begin result set at.
      * @param count Number of results to return.
      * @param sortField Field to sort by.
@@ -576,7 +793,23 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected ResultSet doSearch(final String query, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
-        return doSearch( query, offset, count, new Sort( sortField, reverse ) );
+        return doSearch( query, (Filter) null, offset, count, sortField, reverse );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @param reverse Whether to reverse the resultset. 
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
+        return doSearch( query, filter, offset, count, new Sort( sortField, reverse ) );
     }
     
     /**
@@ -594,6 +827,23 @@ public abstract class AbstractSearcher extends IndexSupport {
     protected ResultSet doSearch(final String query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
         return doSearch( query, clazz, offset, count, new Sort( sortField, reverse ) );
     }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param clazz Type of object being searched for.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sortField Field to sort by.
+     * @param reverse Whether to reverse the resultset. 
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
+        return doSearch( query, filter, clazz, offset, count, new Sort( sortField, reverse ) );
+    }
     
     /**
      * Search the index with the specified query.
@@ -606,9 +856,24 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected ResultSet doSearch(final String query, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
-        return doSearch( query, null, offset, count, sort );
+        return doSearch( query, (Filter) null, offset, count, sort );
     }
     
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param query Query to use.
+     * @param filter Filter to use.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sort Sort to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String query, final Filter filter, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
+        return doSearch( query, filter, null, offset, count, sort );
+    }
+
     /**
      * Search the index with the specified query.
      * 
@@ -621,7 +886,23 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected ResultSet doSearch(final String _query, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
-        String[] fields = new String[0];
+    	return doSearch( _query, null, clazz, offset, count, sort );
+    }
+
+    /**
+     * Search the index with the specified query.
+     * 
+     * @param _query Query to use.
+     * @param filter Filter to use.
+     * @param clazz Type of object being searched for.
+     * @param offset Offset to begin result set at.
+     * @param count Number of results to return.
+     * @param sort Sort to use.
+     * @return ResultSet containing results.
+     * @throws SearchException
+     */
+    protected ResultSet doSearch(final String _query, final Filter filter, final Class<? extends Searchable> clazz, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
+    	String[] fields = new String[0];
         if ( null != clazz )
             fields = SearchableBeanUtils.getDefaultFieldNames( clazz );
         if ( null == fields || fields.length == 0 )
@@ -630,7 +911,7 @@ public abstract class AbstractSearcher extends IndexSupport {
         log.debug("Fields being searched: " + Arrays.asList( fields ) );
         
         final Query query = prepareQuery( _query, fields );
-        final ResultSet results = doSearch( query, offset, count, sort );
+        final ResultSet results = doSearch( query, filter, offset, count, sort );
         
         log.debug("Found " + results.size() + " document(s) that matched query '" + _query + "':");
         
