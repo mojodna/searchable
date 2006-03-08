@@ -133,7 +133,7 @@ public abstract class AbstractIndexer extends IndexSupport {
      * 
      * @param type Type of object that was indexed.
      * @param id Id of document that was indexed.
-     * @param reader IndexReader to use to delete the document.
+     * @param modifier IndexModifier to use to delete the document.
      * @throws IndexingException
      * @throws IOException
      */
@@ -159,7 +159,7 @@ public abstract class AbstractIndexer extends IndexSupport {
     /**
      * Flushes pending deletes.
      * 
-     * @param reader IndexReader to use for deletes.
+     * @param modifier IndexModifier to use for deletes.
      * @throws IndexingException
      * @throws IOException
      */
