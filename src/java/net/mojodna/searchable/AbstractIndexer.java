@@ -56,10 +56,10 @@ public abstract class AbstractIndexer extends IndexSupport {
         log.debug("Creating document with type '" + type + "' and id '" + id + "'.");
 
         final Document doc = new Document();
-        doc.add( Field.Keyword( TYPE_FIELD_NAME, type) );
-        doc.add( Field.Keyword( ID_FIELD_NAME, id.toString() ) );
-        doc.add( Field.Keyword( ID_TYPE_FIELD_NAME, id.getClass().getName() ) );
-        doc.add( Field.Keyword( COMPOUND_ID_FIELD_NAME, type + "-" + id ) );
+        doc.add( new Field( TYPE_FIELD_NAME, type, Field.Store.YES, Field.Index.UN_TOKENIZED ) );
+        doc.add( new Field( ID_FIELD_NAME, id.toString(), Field.Store.YES, Field.Index.UN_TOKENIZED ) );
+        doc.add( new Field( ID_TYPE_FIELD_NAME, id.getClass().getName(), Field.Store.YES, Field.Index.UN_TOKENIZED ) );
+        doc.add( new Field( COMPOUND_ID_FIELD_NAME, type + "-" + id, Field.Store.YES, Field.Index.UN_TOKENIZED ) );
         return doc;
     }
     
@@ -139,7 +139,7 @@ public abstract class AbstractIndexer extends IndexSupport {
      */
     private void delete(final String type, final Object id, final IndexModifier modifier) throws IndexingException, IOException  {
         log.debug("Deleting document " + type + "-" + id + ".");
-        modifier.delete( new Term( COMPOUND_ID_FIELD_NAME, type + "-" + id ) );
+        modifier.deleteDocuments( new Term( COMPOUND_ID_FIELD_NAME, type + "-" + id ) );
     }
     
     /**

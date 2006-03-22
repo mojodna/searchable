@@ -26,7 +26,7 @@ import java.util.Map;
 public abstract class AbstractResult implements Result {
     private String extract;
     private int ranking;
-    private Map storedFields;
+    private Map<String,String> storedFields;
     private float score;
     
     public int getRanking() {
@@ -37,11 +37,11 @@ public abstract class AbstractResult implements Result {
         this.ranking = ranking;
     }
     
-    public Map getStoredFields() {
+    public Map<String,String> getStoredFields() {
         return storedFields;
     }
     
-    public void setStoredFields(final Map storedFields) {
+    public void setStoredFields(final Map<String,String> storedFields) {
         this.storedFields = storedFields;
     }
     

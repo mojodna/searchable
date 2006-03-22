@@ -29,7 +29,7 @@ import org.apache.lucene.search.Query;
 public class ResultSetImpl implements ResultSet {
 	private int offset;
     private Query query;
-	private List<Result> results = new LinkedList();
+	private List<Result> results = new LinkedList<Result>();
 	private int size;
 	
     /**

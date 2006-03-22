@@ -962,7 +962,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected boolean isFieldPresent(final String field, final IndexReader reader) throws SearchException, IOException {
-    	return reader.getFieldNames( true ).contains( field );
+    	return reader.getFieldNames( IndexReader.FieldOption.ALL ).contains( field );
     }
     
     /**
@@ -988,7 +988,7 @@ public abstract class AbstractSearcher extends IndexSupport {
      * @throws SearchException
      */
     protected String[] getFieldsPresent(final IndexReader reader) throws SearchException, IOException {
-    	return SearchableUtils.toStringArray( CollectionUtils.subtract( reader.getFieldNames( true ), IndexSupport.PRIVATE_FIELD_NAMES ) );
+    	return SearchableUtils.toStringArray( CollectionUtils.subtract( reader.getFieldNames( IndexReader.FieldOption.ALL ), IndexSupport.PRIVATE_FIELD_NAMES ) );
     }
     
     /**

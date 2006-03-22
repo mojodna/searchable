@@ -126,7 +126,7 @@ public class AnnotationUtils {
         }
 
         // check all superclasses and inherited interfaces
-        for ( final Class c : AnnotationUtils.getClasses( clazz ) ) {
+        for ( final Class<? extends Object> c : AnnotationUtils.getClasses( clazz ) ) {
             if ( c.isAnnotationPresent( annotationClass ) )
                 annotation = c.getAnnotation( annotationClass );
         }

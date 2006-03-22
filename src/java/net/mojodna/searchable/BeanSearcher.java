@@ -41,6 +41,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final Query query) throws IndexException {
         return doSearch( query );
     }
@@ -53,6 +54,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final Query query, final Filter filter) throws IndexException {
         return doSearch( query, filter );
     }
@@ -66,6 +68,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final Query query, final Integer offset, final Integer count) throws IndexException {
         return doSearch( query, offset, count );
     }
@@ -80,6 +83,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final Query query, final Filter filter, final Integer offset, final Integer count) throws IndexException {
         return doSearch( query, filter, offset, count );
     }
@@ -94,6 +98,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final Query query, final Integer offset, final Integer count, final String sortField) throws IndexException {
         return doSearch( query, offset, count, sortField );
     }
@@ -109,6 +114,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final Query query, final Filter filter, final Integer offset, final Integer count, final String sortField) throws IndexException {
         return doSearch( query, filter, offset, count, sortField );
     }
@@ -125,6 +131,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final Query query, final Integer offset, final Integer count, final String sortField, final boolean reverse) throws IndexException {
         return doSearch( query, offset, count, sortField, reverse );
     }
@@ -141,6 +148,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final Query query, final Filter filter, final Integer offset, final Integer count, final String sortField, final boolean reverse) throws IndexException {
         return doSearch( query, filter, offset, count, sortField, reverse );
     }
@@ -152,6 +160,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query) throws IndexException {
         return doSearch( query );
     }
@@ -164,6 +173,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Filter filter) throws IndexException {
         return doSearch( query, filter );
     }
@@ -176,6 +186,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final String sortField) throws IndexException {
         return doSearch( query, sortField );
     }
@@ -189,6 +200,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Filter filter, final String sortField) throws IndexException {
         return doSearch( query, filter, sortField );
     }
@@ -201,6 +213,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Sort sort) throws IndexException {
         return doSearch( query, sort );
     }
@@ -214,6 +227,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Filter filter, final Sort sort) throws IndexException {
         return doSearch( query, filter, sort );
     }
@@ -227,6 +241,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Integer offset, final Integer count)  throws IndexException {
         return doSearch( query, offset, count );
     }
@@ -241,6 +256,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Filter filter, final Integer offset, final Integer count)  throws IndexException {
         return doSearch( query, filter, offset, count );
     }
@@ -255,6 +271,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Integer offset, final Integer count, final String sortField)  throws IndexException {
         return doSearch( query, offset, count, sortField );
     }
@@ -270,6 +287,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Filter filter, final Integer offset, final Integer count, final String sortField)  throws IndexException {
         return doSearch( query, filter, offset, count, sortField );
     }
@@ -285,6 +303,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
         return doSearch( query, offset, count, sortField, reverse );
     }
@@ -301,6 +320,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Filter filter, final Integer offset, final Integer count, final String sortField, final boolean reverse)  throws IndexException {
         return doSearch( query, filter, offset, count, sortField, reverse );
     }
@@ -315,6 +335,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
         return doSearch( query, offset, count, sort );
     }
@@ -330,6 +351,7 @@ public class BeanSearcher extends AbstractSearcher implements Searcher<Searchabl
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet<Searchable> search(final String query, final Filter filter, final Integer offset, final Integer count, final Sort sort)  throws IndexException {
         return doSearch( query, filter, offset, count, sort );
     }

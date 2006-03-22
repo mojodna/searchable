@@ -41,7 +41,7 @@ public class SearchableBeanUtils {
      * @return Array of default field names specified in all classes.
      */
     public static String[] getDefaultFieldNames(final Class<? extends Searchable>[] classes) {
-        final Collection defaultFields = new HashSet();
+        final Collection<Object> defaultFields = new HashSet<Object>();
         for (final Class<? extends Searchable> clazz : classes) {
             defaultFields.addAll( Arrays.asList( SearchableBeanUtils.getDefaultFieldNames( clazz ) ) );
         }

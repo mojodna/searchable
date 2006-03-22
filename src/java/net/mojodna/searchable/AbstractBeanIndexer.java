@@ -34,6 +34,7 @@ import net.mojodna.searchable.util.AnnotationUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -281,29 +282,23 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
         
         return DEFAULT_BOOST_VALUE;
     }
-    
-    /**
-     * Should the specified property be tokenized?
-     * 
-     * @param descriptor Property descriptor.
-     * @return Whether the specified property should be tokenized.
-     */
-    private boolean isTokenized(final PropertyDescriptor descriptor) {
-        final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Indexed.class );
-        if ( null != annotation ) {
-            return ((Searchable.Indexed) annotation).tokenized();
-        }
-        return false;
-    }
 
     /**
-     * Should the specified property be indexed?
+     * How should the specified property be indexed?
      * 
      * @param descriptor Property descriptor.
-     * @return Whether the specified property should be indexed.
+     * @return How the specified property should be indexed.
      */
-    private boolean isIndexed(final PropertyDescriptor descriptor) {
-        return ( null != AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Indexed.class ) ); 
+    private Field.Index getIndexStyle(final PropertyDescriptor descriptor) {
+        final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Indexed.class );
+        if ( null != annotation ) {
+            if ( ((Searchable.Indexed) annotation).tokenized() ) {
+                return Field.Index.TOKENIZED;
+            } else {
+                return Field.Index.UN_TOKENIZED;
+            }
+        }
+        return Field.Index.NO;
     }
 
     /**
@@ -312,17 +307,20 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @param descriptor Property descriptor.
      * @return Whether the specified property should be stored in the index.
      */
-    private boolean isStored(final PropertyDescriptor descriptor) {
+    private Field.Store isStored(final PropertyDescriptor descriptor) {
         for ( final Class<? extends Annotation> annotationClass : annotations ) {
             final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), annotationClass );
             if ( annotation instanceof Searchable.Indexed ) {
-                return ((Searchable.Indexed) annotation).stored();
+                if ( ((Searchable.Indexed) annotation).stored() )
+                    return Field.Store.YES;
+                else
+                    return Field.Store.NO;
             } else if ( annotation instanceof Searchable.Stored ) {
-                return true;
+                return Field.Store.YES;
             }
         }
         
-        return false;
+        return Field.Store.NO;
     }
     
     /**
@@ -331,12 +329,13 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * @param descriptor Property descriptor.
      * @return Whether the specified property should have its term vectors stored.
      */
-    private boolean isVectorized(final PropertyDescriptor descriptor) {
+    private Field.TermVector isVectorized(final PropertyDescriptor descriptor) {
         final Annotation annotation = AnnotationUtils.getAnnotation( descriptor.getReadMethod(), Searchable.Indexed.class );
         if ( null != annotation ) {
-            return ((Searchable.Indexed) annotation).storeTermVector();
+            if ( ((Searchable.Indexed) annotation).storeTermVector() )
+                return Field.TermVector.YES;
         }
-        return false;
+        return Field.TermVector.NO;
     }
     
     /**
@@ -447,7 +446,8 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
             // handle Dates specially
             float boost = getBoost( descriptor );
             
-            final Field field = Field.Keyword( getFieldname( fieldname, stack ), (Date) prop );
+            // TODO allow resolution to be specified in annotation
+            final Field field = new Field( getFieldname( fieldname, stack ), DateTools.dateToString( (Date) prop, DateTools.Resolution.SECOND ), Field.Store.YES, Field.Index.UN_TOKENIZED );
             field.setBoost( inheritedBoost * boost );
             doc.add( field );
         } else if ( prop instanceof Iterable ) {
@@ -475,7 +475,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
             final String value = prop.toString();
             float boost = getBoost( descriptor );
 
-            final Field field = new Field( getFieldname( fieldname, stack ), value, isStored( descriptor ), isIndexed( descriptor ), isTokenized( descriptor ), isVectorized( descriptor ) );
+            final Field field = new Field( getFieldname( fieldname, stack ), value, isStored( descriptor ), getIndexStyle( descriptor ), isVectorized( descriptor ) );
             field.setBoost( inheritedBoost * boost );
             doc.add( field );
         }
@@ -512,10 +512,11 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
                     
                     if ( prop instanceof Date ) {
                         // handle Dates specially
-                        doc.add( Field.Keyword( SORTABLE_PREFIX + getFieldname( fieldname, stack ), (Date) prop ) );
+                        // TODO specify resolution
+                        doc.add( new Field( SORTABLE_PREFIX + getFieldname( fieldname, stack ), DateTools.dateToString( (Date) prop, DateTools.Resolution.SECOND ), Field.Store.YES, Field.Index.UN_TOKENIZED ) );
                     } else if ( !( prop instanceof Searchable ) ) {
                         final String value = prop.toString();
-                        doc.add( Field.Keyword( SORTABLE_PREFIX + getFieldname( fieldname, stack ), value ) );
+                        doc.add( new Field( SORTABLE_PREFIX + getFieldname( fieldname, stack ), value, Field.Store.YES, Field.Index.UN_TOKENIZED ) );
                     }
                 }
                 catch (final Exception e) {

@@ -102,6 +102,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
      * @return ResultSet containing results.
      * @throws SearchException
      */
+    @SuppressWarnings("unchecked")
     public ResultSet doSearch(final String query, final Filter filter, final Integer offset, final Integer count, final Sort sort) throws SearchException {
         MultiReader mr = null;
         MultiSearcher ms = null;
@@ -125,7 +126,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
             final String[] defaultFields;
             
             if ( null != classes ) {
-                final Collection fields = new HashSet();
+                final Collection<Object> fields = new HashSet<Object>();
 
                 for (final Class clazz : classes) {
                     if ( clazz.isInstance( net.mojodna.searchable.Searchable.class ) && AnnotationUtils.isAnnotationPresent( clazz, DefaultFields.class ) ) {
