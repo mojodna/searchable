@@ -87,7 +87,7 @@ public abstract class AbstractIndexer extends IndexSupport {
      * @throws IndexingException
      * @throws IOException
      */
-    private void save(final Document document, final IndexModifier modifier) throws IndexException, IOException {
+    private synchronized void save(final Document document, final IndexModifier modifier) throws IndexException, IOException {
     	long begin = System.currentTimeMillis();
         // delete document if necessary
         if ( null != document.get( TYPE_FIELD_NAME ) && null != document.get( ID_FIELD_NAME ) )
@@ -95,6 +95,7 @@ public abstract class AbstractIndexer extends IndexSupport {
 
         log.debug("Writing document to index.");
         modifier.addDocument( document );
+        modifier.flush();
         
         long afterWrite = System.currentTimeMillis();
         
@@ -102,23 +103,22 @@ public abstract class AbstractIndexer extends IndexSupport {
     }
     
     /**
-     * Deletes a document from the index.  This constructs a Term corresponding
-     * to the compound key.
+     * Deletes a document from the index.  This constructs a term corresponding
+     * to the provided key.
      * 
-     * @param type Type of object that was indexed.
-     * @param id Id of document that was indexed.
-     * @throws IndexingException
+     * @param key Key of document within the index.
+     * @throws IndexException
      */
-    protected void delete(final String type, final Object id) throws IndexException {
+    protected void delete(final String key) throws IndexException {
 		try {
 			if ( isBatchMode() ) {
-				final Hits hits = getIndexSearcher().search( new TermQuery( new Term( COMPOUND_ID_FIELD_NAME, type + "-" + id ) ) );
+				final Hits hits = getIndexSearcher().search( new TermQuery( new Term( COMPOUND_ID_FIELD_NAME, key ) ) );
 				for (final Iterator i = hits.iterator(); i.hasNext(); ) {
 					Hit hit = (Hit) i.next();
 					pendingDeletes.add( hit.getId() );
 				}
 			} else {
-				delete( type, id, getIndexModifier() );
+				delete( key, getIndexModifier() );
 			}
 		}
 		catch (final IOException e) {
@@ -133,13 +133,25 @@ public abstract class AbstractIndexer extends IndexSupport {
      * 
      * @param type Type of object that was indexed.
      * @param id Id of document that was indexed.
+     * @throws IndexingException
+     */
+    protected void delete(final String type, final Object id) throws IndexException {
+    	delete(type + "-" + id);
+    }
+    
+    /**
+     * Deletes a document from the index.  This constructs a Term corresponding
+     * to the compound key.
+     * 
+     * @param key Compound key of the document in the index.
      * @param modifier IndexModifier to use to delete the document.
      * @throws IndexingException
      * @throws IOException
      */
-    private void delete(final String type, final Object id, final IndexModifier modifier) throws IndexingException, IOException  {
-        log.debug("Deleting document " + type + "-" + id + ".");
-        modifier.deleteDocuments( new Term( COMPOUND_ID_FIELD_NAME, type + "-" + id ) );
+    private synchronized void delete(final String key, final IndexModifier modifier) throws IndexingException, IOException  {
+        log.debug("Deleting document " + key + ".");
+        modifier.deleteDocuments( new Term( COMPOUND_ID_FIELD_NAME, key ) );
+        modifier.flush();
     }
     
     /**

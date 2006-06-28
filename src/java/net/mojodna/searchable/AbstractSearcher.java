@@ -379,7 +379,7 @@ public abstract class AbstractSearcher extends IndexSupport {
     protected ResultSet doSearch(final Query query, final Filter filter, final Searcher searcher, final Integer offset, final Integer count, final Sort sort) throws SearchException, IOException {
     	// execute the search
     	log.debug("Searching with query: " + query.toString() );
-    	final Hits hits = searcher.search(query, filter, sort);
+        final Hits hits = searcher.search(query, filter, sort);
 
     	// create a container for results
     	final List<Result> results = new LinkedList<Result>();
@@ -470,7 +470,8 @@ public abstract class AbstractSearcher extends IndexSupport {
     	}
 
     	rs.setResults( results );
-    	return rs;
+        searcher.close();
+        return rs;
     }
     
     /**

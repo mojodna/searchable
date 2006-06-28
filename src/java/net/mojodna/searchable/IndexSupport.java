@@ -36,12 +36,12 @@ import org.apache.lucene.store.FSDirectory;
 /**
  * Support class for classes that access an index.  Contains common methods
  * for indexing and searching as well as constants.
- * 
+ *
  * @author Seth Fitzsimmons
  */
 public abstract class IndexSupport {
     private static final Logger log = Logger.getLogger( IndexSupport.class );
-    
+
     /** Default index path ($TEMP/lucene) */
     public static final String DEFAULT_INDEX_PATH = System.getProperty("java.io.tmpdir") + File.separatorChar + "lucene";
     /** Default Analyzer */
@@ -58,19 +58,19 @@ public abstract class IndexSupport {
     public static final String COMPOUND_ID_FIELD_NAME = "_cid";
     /** Prefix for keyword fields intended for sorting */
     public static final String SORTABLE_PREFIX = "_sort-";
-    /** Batch merge factor */
-    public static final int BATCH_MERGE_FACTOR = 500;
-    
+    /** Batch merge factor default is 50 */
+    private int batchMergeFactor = 50;
+
     /** Collection of field names internal to searchable */
     protected static final Collection PRIVATE_FIELD_NAMES = Arrays.asList( new String[] { ID_FIELD_NAME, ID_TYPE_FIELD_NAME, TYPE_FIELD_NAME, COMPOUND_ID_FIELD_NAME } );
-    
+
     /** Analyzer in use */
     private Analyzer analyzer = DEFAULT_ANALYZER;
     /** Index path */
     private String indexPath = DEFAULT_INDEX_PATH;
     /** Is this in batch mode? */
     private boolean batchMode;
-    
+
     /** Shared index directories */
     private static Map<String,Directory> indexDirectories = new ConcurrentHashMap<String, Directory>();
     /** Shared IndexReaders */
@@ -79,23 +79,31 @@ public abstract class IndexSupport {
     private static Map<String,IndexModifier> modifiers = new ConcurrentHashMap<String, IndexModifier>();
     /** Shared IndexSearchers */
     private static Map<String,IndexSearcher> searchers = new ConcurrentHashMap<String, IndexSearcher>();
-    
+
     /**
      * Gets the index path in use.
-     * 
+     *
      * @return Index path.
      */
     public String getIndexPath() {
     	return indexPath;
     }
-    
+
     public void setIndexPath(final String indexPath) {
     	this.indexPath = indexPath;
     }
-    
+
+    public int getBatchMergeFactor() {
+        return batchMergeFactor;
+    }
+
+    public void setBatchMergeFactor(int batchMergeFactor) {
+        this.batchMergeFactor = batchMergeFactor;
+    }
+
     /**
      * Gets the underlying Directory containing this index.
-     * 
+     *
      * @return Directory holding this index.
      */
     protected Directory getIndexDirectory() throws IndexException {
@@ -272,7 +280,7 @@ public abstract class IndexSupport {
     			}
     			
 				if ( isBatchMode() )
-					modifiers.get( getIndexPath() ).setMergeFactor( BATCH_MERGE_FACTOR );
+					modifiers.get( getIndexPath() ).setMergeFactor( batchMergeFactor );
 				
 				return modifiers.get( getIndexPath() );
     		}
@@ -285,7 +293,9 @@ public abstract class IndexSupport {
     
     /**
      * Gets the IndexSearcher associated with this index.
-     * 
+     * Override this method if you wish to use something like a
+     * DelayCloseIndexSearcher.
+     *  
      * @return IndexSearcher associated with this index.
      * @throws IndexException
      */

@@ -49,7 +49,6 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
      * all indexes.
      * 
      * @param indexPaths Index paths to search.
-     * @throws IndexException
      */
     // TODO add constructor with default fields to use
     public AbstractMultiSearcher(final String[] indexPaths) {
@@ -64,7 +63,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
      * @param indexPaths Index paths to search.
      * @param classes Classes being searched for (used for dynamically determining
      * default fields.
-     * @throws IndexException
+     * @throws IllegalArgumentException
      */
     public AbstractMultiSearcher(final String[] indexPaths, final Class[] classes) {
         if ( indexPaths.length != classes.length )
@@ -129,7 +128,7 @@ public abstract class AbstractMultiSearcher extends AbstractSearcher {
                 final Collection<Object> fields = new HashSet<Object>();
 
                 for (final Class clazz : classes) {
-                    if ( clazz.isInstance( net.mojodna.searchable.Searchable.class ) && AnnotationUtils.isAnnotationPresent( clazz, DefaultFields.class ) ) {
+                    if ( AnnotationUtils.isAnnotationPresent( clazz, DefaultFields.class ) ) {
                         // load fields specified in @DefaultFields annotation
                         fields.addAll( Arrays.asList( SearchableBeanUtils.getDefaultFieldNames( clazz ) ) );
                     } else {

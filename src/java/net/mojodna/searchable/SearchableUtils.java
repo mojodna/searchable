@@ -16,6 +16,8 @@ limitations under the License.
 package net.mojodna.searchable;
 
 import java.util.Collection;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 /**
  * Utility methods for the Searchable toolkit.
@@ -36,5 +38,20 @@ public class SearchableUtils {
             defaultFields[i++] = f.toString();
         }
         return defaultFields;
+    }
+
+    public static boolean isReservedCharacter(char c){
+        return (c == '+') || (c == '-') || (c == '&') || (c == '|') || (c == '!') || (c == '(') || (c == ')') || (c == '{') || (c == '}') || (c == '[') || (c == ']') || (c == '^') || (c == '"') || (c == '~') || (c == '*') || (c == '?') || (c == ':') || (c == '\\');
+    }
+
+    /**
+     * Formats a date for lucene usage. 
+     * @param date the date to be converted to a string.
+     * @return date in YYYYMMDD format
+     */
+    public static String simpleDateToString(Date date){
+        SimpleDateFormat dateFormat = (SimpleDateFormat)SimpleDateFormat.getDateInstance();
+        dateFormat.applyPattern("yyyyMMdd");
+        return dateFormat.format(date);
     }
 }

@@ -30,7 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AnnotationUtils {
 	private static Map<AnnotationKey,Annotation> annotationCache = new ConcurrentHashMap<AnnotationKey,Annotation>();
-	
+	private static Map<AnnotationKey,Object> annotationMissCache = new ConcurrentHashMap<AnnotationKey,Object>();
+
     /**
      * Get a specific annotation present on a method.
      * 
@@ -50,9 +51,15 @@ public class AnnotationUtils {
     	if ( null != method && annotationCache.containsKey( key ) ) {
     		return annotationCache.get( key );
     	}
-    	
+
+        // we don't want to keep checking methods that don't have annotations to see if they have annotations
+        if ( null != method && annotationMissCache.containsKey( key ) ) {
+    		return null;
+    	}
+
         if ( null == method || null == annotationClass )
             return null;
+
 
         Annotation annotation = null;
         
@@ -69,6 +76,8 @@ public class AnnotationUtils {
         
         if ( null != annotation ) {
         	annotationCache.put( key, annotation );
+        } else {
+            annotationMissCache.put( key, key);
         }
         
         return annotation;
