@@ -16,6 +16,7 @@ limitations under the License.
 package net.mojodna.searchable;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -109,10 +110,10 @@ public abstract class AbstractIndexer extends IndexSupport {
      * @param key Key of document within the index.
      * @throws IndexException
      */
-    protected void delete(final String key) throws IndexException {
+    protected void delete(final Serializable key) throws IndexException {
 		try {
 			if ( isBatchMode() ) {
-				final Hits hits = getIndexSearcher().search( new TermQuery( new Term( COMPOUND_ID_FIELD_NAME, key ) ) );
+				final Hits hits = getIndexSearcher().search( new TermQuery( new Term( COMPOUND_ID_FIELD_NAME, key.toString() ) ) );
 				for (final Iterator i = hits.iterator(); i.hasNext(); ) {
 					Hit hit = (Hit) i.next();
 					pendingDeletes.add( hit.getId() );
@@ -148,9 +149,9 @@ public abstract class AbstractIndexer extends IndexSupport {
      * @throws IndexingException
      * @throws IOException
      */
-    private synchronized void delete(final String key, final IndexModifier modifier) throws IndexingException, IOException  {
+    private synchronized void delete(final Serializable key, final IndexModifier modifier) throws IndexingException, IOException  {
         log.debug("Deleting document " + key + ".");
-        modifier.deleteDocuments( new Term( COMPOUND_ID_FIELD_NAME, key ) );
+        modifier.deleteDocuments( new Term( COMPOUND_ID_FIELD_NAME, key.toString() ) );
         modifier.flush();
     }
     

@@ -15,6 +15,8 @@ limitations under the License.
 */
 package net.mojodna.searchable;
 
+import org.apache.lucene.document.Document;
+
 /**
  * Visible API for indexing Searchables.
  * 
@@ -34,10 +36,11 @@ public class BeanIndexer extends AbstractBeanIndexer implements Indexer<Searchab
      * Add a searchable bean to the index.
      * 
      * @param bean Bean to index.
+     * @return Document with this bean added.
      * @throws IndexingException
      */
-    public void add(final Searchable bean) throws IndexException {
-        doAdd( bean );
+    public Document add(final Searchable bean) throws IndexException {
+        return doAdd( bean );
     }
     
     /**

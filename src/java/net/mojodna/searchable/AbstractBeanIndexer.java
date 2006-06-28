@@ -64,15 +64,18 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
      * Add a searchable bean to the index.
      * 
      * @param bean Bean to index.
+     * @return Document with this bean added.
      * @throws IndexingException
      */
-    protected void doAdd(final Searchable bean) throws IndexException {
+    protected Document doAdd(final Searchable bean) throws IndexException {
         // process a Searchable
         final Document doc = createDocument( getType( bean ), getId( bean ) );
         
         processBean( doc, bean );
         
         save( doc );
+        
+        return doc;
     }
     
     /**

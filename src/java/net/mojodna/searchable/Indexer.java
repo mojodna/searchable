@@ -15,6 +15,8 @@ limitations under the License.
 */
 package net.mojodna.searchable;
 
+import org.apache.lucene.document.Document;
+
 /**
  * Barebones indexer interface.
  * 
@@ -27,7 +29,7 @@ public interface Indexer<E> {
      * @param object Object to index.
      * @throws IndexingException
      */
-    public void add(E object) throws IndexException;
+    public Document add(E object) throws IndexException;
     
     /**
      * Deletes an object from the index.
