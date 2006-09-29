@@ -113,7 +113,7 @@ public class SchemaGenerator {
 								+ "ways, or to add multiple fields to the same field for easier/faster searching."));
 
 		Set<String> defaultFields = new HashSet<String>();
-		for (Class<? extends Searchable> clazz : classes) {
+		for (final Class<? extends Searchable> clazz : classes) {
 			if (AnnotationUtils.isAnnotationPresent(clazz, DefaultFields.class)) {
 				// load fields listed as default fields
 				defaultFields.addAll(Arrays.asList(SearchableBeanUtils
@@ -121,7 +121,7 @@ public class SchemaGenerator {
 			}
 		}
 
-		for (String fieldName : defaultFields) {
+		for (final String fieldName : defaultFields) {
 			root.addContent(new Element("copyField").setAttribute("source",
 					fieldName).setAttribute("dest", DEFAULT_FIELD_NAME));
 		}
@@ -249,18 +249,21 @@ public class SchemaGenerator {
 				IndexSupport.COMPOUND_ID_FIELD_NAME).setAttribute("type",
 				"string").setAttribute("indexed", "true").setAttribute(
 				"stored", "true"));
-		fields.addContent(new Element("field").setAttribute("name",
-				IndexSupport.ID_FIELD_NAME).setAttribute("type",
-				"string").setAttribute("indexed", "true").setAttribute(
-				"stored", "true"));
-		fields.addContent(new Element("field").setAttribute("name",
-				IndexSupport.ID_TYPE_FIELD_NAME).setAttribute("type",
-				"string").setAttribute("indexed", "true").setAttribute(
-				"stored", "true"));
-		fields.addContent(new Element("field").setAttribute("name",
-				IndexSupport.TYPE_FIELD_NAME).setAttribute("type",
-				"string").setAttribute("indexed", "true").setAttribute(
-				"stored", "true"));
+		fields
+				.addContent(new Element("field").setAttribute("name",
+						IndexSupport.ID_FIELD_NAME).setAttribute("type",
+						"string").setAttribute("indexed", "true").setAttribute(
+						"stored", "true"));
+		fields
+				.addContent(new Element("field").setAttribute("name",
+						IndexSupport.ID_TYPE_FIELD_NAME).setAttribute("type",
+						"string").setAttribute("indexed", "true").setAttribute(
+						"stored", "true"));
+		fields
+				.addContent(new Element("field").setAttribute("name",
+						IndexSupport.TYPE_FIELD_NAME).setAttribute("type",
+						"string").setAttribute("indexed", "true").setAttribute(
+						"stored", "true"));
 
 		for (Field field : fieldMap.values()) {
 			if (field.name().startsWith(IndexSupport.SORTABLE_PREFIX)) {
