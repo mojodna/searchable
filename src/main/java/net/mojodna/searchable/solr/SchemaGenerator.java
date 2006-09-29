@@ -65,7 +65,8 @@ public class SchemaGenerator {
 			final Class<? extends Searchable>... classes)
 			throws IndexingException {
 		final Document doc = new Document();
-		doc.addContent(new Comment("Schema generated at " + new Date() + " for " + Arrays.asList(classes)));
+		doc.addContent(new Comment("Schema generated at " + new Date()
+				+ " for " + Arrays.asList(classes)));
 		doc
 				.addContent(new Comment(
 						"attribute \"name\" is the name of this schema and is only used for display purposes.\n"
@@ -240,6 +241,26 @@ public class SchemaGenerator {
 		}
 
 		final Element fields = new Element("fields");
+		fields.addContent(new Element("field").setAttribute("name",
+				DEFAULT_FIELD_NAME).setAttribute("type", "text").setAttribute(
+				"indexed", "true").setAttribute("stored", "false")
+				.setAttribute("multiValued", "true"));
+		fields.addContent(new Element("field").setAttribute("name",
+				IndexSupport.COMPOUND_ID_FIELD_NAME).setAttribute("type",
+				"string").setAttribute("indexed", "true").setAttribute(
+				"stored", "true"));
+		fields.addContent(new Element("field").setAttribute("name",
+				IndexSupport.ID_FIELD_NAME).setAttribute("type",
+				"string").setAttribute("indexed", "true").setAttribute(
+				"stored", "true"));
+		fields.addContent(new Element("field").setAttribute("name",
+				IndexSupport.ID_TYPE_FIELD_NAME).setAttribute("type",
+				"string").setAttribute("indexed", "true").setAttribute(
+				"stored", "true"));
+		fields.addContent(new Element("field").setAttribute("name",
+				IndexSupport.TYPE_FIELD_NAME).setAttribute("type",
+				"string").setAttribute("indexed", "true").setAttribute(
+				"stored", "true"));
 
 		for (Field field : fieldMap.values()) {
 			if (field.name().startsWith(IndexSupport.SORTABLE_PREFIX)) {
@@ -395,7 +416,7 @@ public class SchemaGenerator {
 		types
 				.addContent(new Comment(
 						"A text field that only splits on whitespace for more exact matching"));
-		types.addContent(makeFieldtype("test_ws", "solr.TextField")
+		types.addContent(makeFieldtype("text_ws", "solr.TextField")
 				.setAttribute("positionIncrementGap", "100").addContent(
 						new Element("analyzer").addContent(new Element(
 								"tokenizer").setAttribute("class",
@@ -410,7 +431,7 @@ public class SchemaGenerator {
 								+ "Duplicate tokens at the same position (which may result from Stemmed Synonyms or\n"
 								+ "WordDelim parts) are removed."));
 		types
-				.addContent(makeFieldtype("test_ws", "solr.TextField")
+				.addContent(makeFieldtype("text", "solr.TextField")
 						.setAttribute("positionIncrementGap", "100")
 						.addContent(
 								new Element("analyzer")
@@ -474,7 +495,7 @@ public class SchemaGenerator {
 										.addContent(
 												new Element("filter")
 														.setAttribute("class",
-																"solr.SynomymFilterFactory")
+																"solr.SynonymFilterFactory")
 														.setAttribute(
 																"synonyms",
 																"synonyms.txt")

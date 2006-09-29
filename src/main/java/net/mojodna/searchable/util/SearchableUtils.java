@@ -18,16 +18,20 @@ package net.mojodna.searchable.util;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
 import net.mojodna.searchable.IndexSupport;
 import net.mojodna.searchable.Searchable;
+import net.mojodna.searchable.Searchable.Sortable;
 
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.document.Field;
 
 /**
@@ -91,6 +95,48 @@ public final class SearchableUtils {
 	}
 
 	/**
+	 * Generate a list of field names for a given property.
+	 * 
+	 * @param descriptor Property descriptor.
+	 * @return Collection of field names.
+	 */
+	public static final Collection<String> getFieldnames(
+			final PropertyDescriptor descriptor) {
+		final Collection<String> fieldnames = new LinkedList<String>();
+
+		String fieldname = descriptor.getName();
+
+		for (final Class<? extends Annotation> annotationClass : Searchable.INDEXING_ANNOTATIONS) {
+			final Annotation annotation = AnnotationUtils.getAnnotation(
+					descriptor.getReadMethod(), annotationClass);
+			if (annotation instanceof Searchable.Indexed) {
+				final Searchable.Indexed i = (Searchable.Indexed) annotation;
+				if (StringUtils.isNotBlank(i.name()))
+					fieldname = i.name();
+
+				// add any aliases
+				fieldnames.addAll(Arrays.asList(i.aliases()));
+			} else if (annotation instanceof Searchable.Stored) {
+				final Searchable.Stored s = (Searchable.Stored) annotation;
+				if (StringUtils.isNotBlank(s.name()))
+					fieldname = s.name();
+
+				// add any aliases
+				fieldnames.addAll(Arrays.asList(s.aliases()));
+			} else if (annotation instanceof Searchable.Sortable) {
+				final Searchable.Sortable s = (Sortable) annotation;
+				if (StringUtils.isNotBlank(s.name()))
+					fieldname = s.name();
+			}
+		}
+
+		// add the default field name
+		fieldnames.add(fieldname);
+
+		return fieldnames;
+	}
+
+	/**
 	 * @param clazz
 	 * @return Field names.
 	 */
@@ -115,10 +161,15 @@ public final class SearchableUtils {
 				.getPropertyDescriptors(clazz)) {
 
 			if (containsIndexAnnotations(d)) {
-				final Field f = new Field(d.getName(), clazz.getName(),
-						isStored(d), getIndexStyle(d));
-				f.setBoost(getBoost(d));
-				fields.add(f);
+				final Field.Store stored = isStored(d);
+				final Field.Index indexStyle = getIndexStyle(d);
+				final float boost = getBoost(d);
+				for (final String name : getFieldnames(d)) {
+					final Field f = new Field(name, clazz.getName(), stored,
+							indexStyle);
+					f.setBoost(boost);
+					fields.add(f);
+				}
 			}
 
 			if (containsSortableAnnotations(d)) {
@@ -218,8 +269,7 @@ public final class SearchableUtils {
 	 * @param descriptor Property descriptor.
 	 * @return Whether the specified property should be stored in the index.
 	 */
-	public static final Field.Store isStored(
-			final PropertyDescriptor descriptor) {
+	public static final Field.Store isStored(final PropertyDescriptor descriptor) {
 		for (final Class<? extends Annotation> annotationClass : Searchable.INDEXING_ANNOTATIONS) {
 			final Annotation annotation = AnnotationUtils.getAnnotation(
 					descriptor.getReadMethod(), annotationClass);

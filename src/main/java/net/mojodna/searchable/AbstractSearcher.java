@@ -43,15 +43,10 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.highlight.QueryHighlightExtractor;
 
 /**
  * Core methods for searching an index.  This is intended to be subclassed by
  * a model-specific implementation that provides appropriate search() methods.
- * This contains convenience methods for searching and excerpting (with
- * highlights).
- * 
- * @see org.apache.lucene.search.highlight.QueryHighlightExtractor
  * 
  * @author Seth Fitzsimmons
  */
@@ -82,51 +77,6 @@ public abstract class AbstractSearcher extends IndexSupport {
 		if (null == ConvertUtils.lookup(UUID.class)) {
 			ConvertUtils.register(new UUIDConverter(), UUID.class);
 		}
-	}
-
-	private String highlightClose = DEFAULT_HIGHLIGHT_CLOSE;
-
-	private String highlightFragmentSeparator = DEFAULT_HIGHLIGHT_FRAGMENT_SEPARATOR;
-
-	private int highlightFragmentSize = DEFAULT_HIGHLIGHT_FRAGMENT_SIZE_IN_BYTES;
-
-	private int highlightMaxNumFragmentsRequired = DEFAULT_HIGHLIGHTER_MAX_NUM_FRAGMENTS_REQUIRED;
-
-	private String highlightOpen = DEFAULT_HIGHLIGHT_OPEN;
-
-	/**
-	 * Set the searchExtract property on a result if an excerpt can be found.
-	 * 
-	 * @param query Query that was used to find this result.
-	 * @param result Result to load searchExtract for
-	 * @return Result with searchExtract loaded.
-	 * @throws SearchException
-	 */
-	protected Result doExcerpt(final Query query, final Result result)
-			throws SearchException {
-		final String excerptProperty = SearchableBeanUtils
-				.getExcerptPropertyName(result.getClass());
-		if (null != excerptProperty) {
-			try {
-				final QueryHighlightExtractor highlighter = new QueryHighlightExtractor(
-						query, getAnalyzer(), getHighlightOpen(),
-						getHighlightClose());
-
-				final Object body = PropertyUtils.getProperty(result,
-						excerptProperty);
-				if (null != body) {
-					final String extract = highlighter.getBestFragments(body
-							.toString(), getHighlightFragmentSize(),
-							getHighlightMaxNumFragmentsRequired(),
-							getHighlightFragmentSeparator());
-					result.setSearchExtract(extract);
-				}
-			} catch (final Exception e) {
-				throw new SearchException(e);
-			}
-		}
-
-		return result;
 	}
 
 	/**
@@ -878,22 +828,6 @@ public abstract class AbstractSearcher extends IndexSupport {
 	}
 
 	/**
-	 * Create excerpts using properties specified as @Excerptable.
-	 * 
-	 * Does not use generics due to casting by subclasses.
-	 * 
-	 * @param results Results to excerpt.
-	 * @return ResultSet containing excerpted entries.
-	 * @throws SearchException
-	 */
-	protected ResultSet excerpt(final ResultSet results) throws SearchException {
-		for (final Object r : results.getResults()) {
-			doExcerpt(results.getQuery(), (Result) r);
-		}
-		return results;
-	}
-
-	/**
 	 * Loads a document from the index.
 	 * 
 	 * @param id Document id.
@@ -928,51 +862,6 @@ public abstract class AbstractSearcher extends IndexSupport {
 		return SearchableUtils.toStringArray(CollectionUtils.subtract(reader
 				.getFieldNames(IndexReader.FieldOption.ALL),
 				IndexSupport.PRIVATE_FIELD_NAMES));
-	}
-
-	/**
-	 * Gets the text to place at the end of the highlighted region.
-	 * 
-	 * @return Text to place at the end of the highlighted region.
-	 */
-	public String getHighlightClose() {
-		return highlightClose;
-	}
-
-	/**
-	 * Gets the text to use between fragments.
-	 * 
-	 * @return Text to use between fragments.
-	 */
-	public String getHighlightFragmentSeparator() {
-		return highlightFragmentSeparator;
-	}
-
-	/**
-	 * Gets the max size (in bytes) of fragments to extract.
-	 * 
-	 * @return Max size (in bytes) of fragments to extract.
-	 */
-	public int getHighlightFragmentSize() {
-		return highlightFragmentSize;
-	}
-
-	/**
-	 * Gets the max number of fragments to display.
-	 * 
-	 * @return Max number of fragments to display.
-	 */
-	public int getHighlightMaxNumFragmentsRequired() {
-		return highlightMaxNumFragmentsRequired;
-	}
-
-	/**
-	 * Gets the text to place at the beginning of the highlighted region.
-	 * 
-	 * @return Text to place at the beginning of the highlighted region.
-	 */
-	public String getHighlightOpen() {
-		return highlightOpen;
 	}
 
 	/**
@@ -1049,52 +938,5 @@ public abstract class AbstractSearcher extends IndexSupport {
 		} catch (final ParseException e) {
 			throw new SearchException("Unable to prepare query.", e);
 		}
-	}
-
-	/**
-	 * Sets the text to place at the end of the highlighted region.
-	 * 
-	 * @param highlightClose Text to place at the end of the highlighted region.
-	 */
-	public void setHighlightClose(final String highlightClose) {
-		this.highlightClose = highlightClose;
-	}
-
-	/**
-	 * Sets the text to use between fragments.
-	 * 
-	 * @param highlightFragmentSeparator Text to use between fragments.
-	 */
-	public void setHighlightFragmentSeparator(
-			final String highlightFragmentSeparator) {
-		this.highlightFragmentSeparator = highlightFragmentSeparator;
-	}
-
-	/**
-	 * Sets the max size (in bytes) of fragments to extract.
-	 * 
-	 * @param highlightFragmentSize Max size (in bytes) of fragments to extract.
-	 */
-	public void setHighlightFragmentSize(final int highlightFragmentSize) {
-		this.highlightFragmentSize = highlightFragmentSize;
-	}
-
-	/**
-	 * Sets the max number of fragments to display.
-	 * 
-	 * @param highlightMaxNumFragmentsRequired Max number of fragments to display.
-	 */
-	public void setHighlightMaxNumFragmentsRequired(
-			final int highlightMaxNumFragmentsRequired) {
-		this.highlightMaxNumFragmentsRequired = highlightMaxNumFragmentsRequired;
-	}
-
-	/**
-	 * Sets the text to place at the beginning of the highlighted region.
-	 * 
-	 * @param highlightOpen Text to place at the beginning of the highlighted region.
-	 */
-	public void setHighlightOpen(final String highlightOpen) {
-		this.highlightOpen = highlightOpen;
 	}
 }

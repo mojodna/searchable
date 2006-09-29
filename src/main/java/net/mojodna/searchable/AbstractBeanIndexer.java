@@ -19,11 +19,8 @@ import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Stack;
 
 import net.mojodna.searchable.Searchable.Indexed;
@@ -33,7 +30,6 @@ import net.mojodna.searchable.util.AnnotationUtils;
 import net.mojodna.searchable.util.SearchableUtils;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
@@ -73,7 +69,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 					continue;
 				}
 
-				for (final String fieldname : getFieldnames(descriptor)) {
+				for (final String fieldname : SearchableUtils.getFieldnames(descriptor)) {
 					log.debug("Indexing " + descriptor.getName() + " as "
 							+ getFieldname(fieldname, stack));
 
@@ -186,7 +182,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 				return doc;
 			}
 
-			for (final String fieldname : getFieldnames(descriptor)) {
+			for (final String fieldname : SearchableUtils.getFieldnames(descriptor)) {
 				log.debug("Indexing " + descriptor.getName() + " as sortable ("
 						+ getFieldname(fieldname, stack) + ").");
 
@@ -295,47 +291,6 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 		} else {
 			return fieldname;
 		}
-	}
-
-	/**
-	 * Generate a list of field names for a given property.
-	 * 
-	 * @param descriptor Property descriptor.
-	 * @return Collection of field names.
-	 */
-	private Collection<String> getFieldnames(final PropertyDescriptor descriptor) {
-		final Collection<String> fieldnames = new LinkedList<String>();
-
-		String fieldname = descriptor.getName();
-
-		for (final Class<? extends Annotation> annotationClass : Searchable.INDEXING_ANNOTATIONS) {
-			final Annotation annotation = AnnotationUtils.getAnnotation(
-					descriptor.getReadMethod(), annotationClass);
-			if (annotation instanceof Searchable.Indexed) {
-				final Searchable.Indexed i = (Searchable.Indexed) annotation;
-				if (StringUtils.isNotBlank(i.name()))
-					fieldname = i.name();
-
-				// add any aliases
-				fieldnames.addAll(Arrays.asList(i.aliases()));
-			} else if (annotation instanceof Searchable.Stored) {
-				final Searchable.Stored s = (Searchable.Stored) annotation;
-				if (StringUtils.isNotBlank(s.name()))
-					fieldname = s.name();
-
-				// add any aliases
-				fieldnames.addAll(Arrays.asList(s.aliases()));
-			} else if (annotation instanceof Searchable.Sortable) {
-				final Searchable.Sortable s = (Sortable) annotation;
-				if (StringUtils.isNotBlank(s.name()))
-					fieldname = s.name();
-			}
-		}
-
-		// add the default field name
-		fieldnames.add(fieldname);
-
-		return fieldnames;
 	}
 
 	/**

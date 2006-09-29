@@ -26,7 +26,10 @@ import net.mojodna.searchable.IndexException;
 import net.mojodna.searchable.IndexingException;
 import net.mojodna.searchable.Searchable;
 
+import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.URI;
+import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.log4j.Logger;
@@ -46,7 +49,11 @@ public class SolrIndexer extends AbstractBeanIndexer implements
 
 	private HttpClient httpClient;
 
-	private String solrUrl;
+	private String solrHost = "localhost";
+
+	private String solrPath = "/solr/update";
+
+	private int solrPort = 8983;
 
 	public Document add(final Searchable bean) throws IndexException {
 		return doAdd(bean);
@@ -67,11 +74,11 @@ public class SolrIndexer extends AbstractBeanIndexer implements
 	 * @throws IOException
 	 */
 	protected void commit() throws IOException {
-		final PostMethod post = new PostMethod(solrUrl);
+		final PostMethod post = new PostMethod(solrPath);
 		post.setRequestEntity(new StringRequestEntity("<commit/>", "text/xml",
 				"UTF-8"));
 		log.debug("Committing.");
-		httpClient.executeMethod(post);
+		getHttpClient().executeMethod(post);
 	}
 
 	public void delete(final Searchable bean) throws IndexException {
@@ -87,11 +94,11 @@ public class SolrIndexer extends AbstractBeanIndexer implements
 		try {
 			final XMLOutputter out = new XMLOutputter(Format.getPrettyFormat());
 			final String deleteString = out.outputString(delete);
-			final PostMethod post = new PostMethod(solrUrl);
+			final PostMethod post = new PostMethod(solrPath);
 			post.setRequestEntity(new StringRequestEntity(deleteString,
 					"text/xml", "UTF-8"));
 			log.debug("Deleting:\n" + deleteString);
-			httpClient.executeMethod(post);
+			getHttpClient().executeMethod(post);
 
 			if (!isBatchMode()) {
 				commit();
@@ -109,14 +116,21 @@ public class SolrIndexer extends AbstractBeanIndexer implements
 		}
 	}
 
+	private HttpClient getHttpClient() throws URIException {
+		final HostConfiguration hostConfig = new HostConfiguration();
+		hostConfig.setHost(new URI("http", null, solrHost, solrPort, solrPath));
+		httpClient.setHostConfiguration(hostConfig);
+		return httpClient;
+	}
+
 	@Override
 	public void optimize() throws IndexingException {
 		try {
-			PostMethod post = new PostMethod(solrUrl);
+			PostMethod post = new PostMethod(solrPath);
 			post.setRequestEntity(new StringRequestEntity("<optimize/>",
 					"text/xml", "UTF-8"));
 			log.debug("Optimizing.");
-			httpClient.executeMethod(post);
+			getHttpClient().executeMethod(post);
 		} catch (final IOException e) {
 			throw new IndexingException(e);
 		}
@@ -134,11 +148,11 @@ public class SolrIndexer extends AbstractBeanIndexer implements
 		try {
 			final XMLOutputter out = new XMLOutputter(Format.getPrettyFormat());
 			final String addString = out.outputString(add);
-			final PostMethod post = new PostMethod(solrUrl);
+			final PostMethod post = new PostMethod(solrPath);
 			post.setRequestEntity(new StringRequestEntity(addString,
 					"text/xml", "UTF-8"));
 			log.debug("Adding:\n" + addString);
-			httpClient.executeMethod(post);
+			getHttpClient().executeMethod(post);
 
 			if (!isBatchMode()) {
 				commit();
@@ -158,11 +172,29 @@ public class SolrIndexer extends AbstractBeanIndexer implements
 	}
 
 	/**
-	 * Set the URL of the Solr server to use.
-	 * 
-	 * @param solrUrl Solr URL.
+	 * Set the hostname of the Solr server.
+	 *
+	 * @param solrHost Solr hostname.
 	 */
-	public void setSolrUrl(final String solrUrl) {
-		this.solrUrl = solrUrl;
+	public void setSolrHost(final String solrHost) {
+		this.solrHost = solrHost;
+	}
+
+	/**
+	 * Set the path on the Solr server to use.
+	 * 
+	 * @param solrPath Solr URL.
+	 */
+	public void setSolrPath(final String solrPath) {
+		this.solrPath = solrPath;
+	}
+
+	/**
+	 * Set the port to access the Solr server on.
+	 * 
+	 * @param solrPort Solr port.
+	 */
+	public void setSolrPort(final int solrPort) {
+		this.solrPort = solrPort;
 	}
 }
