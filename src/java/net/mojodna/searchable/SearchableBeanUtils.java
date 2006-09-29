@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import net.mojodna.searchable.util.AnnotationUtils;
+import net.mojodna.searchable.util.SearchableUtils;
 
 import org.apache.commons.beanutils.PropertyUtils;
 

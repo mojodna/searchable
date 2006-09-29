@@ -30,6 +30,7 @@ import net.mojodna.searchable.Searchable.Indexed;
 import net.mojodna.searchable.Searchable.Sortable;
 import net.mojodna.searchable.Searchable.Stored;
 import net.mojodna.searchable.util.AnnotationUtils;
+import net.mojodna.searchable.util.SearchableUtils;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
@@ -44,9 +45,6 @@ import org.apache.lucene.document.Field;
  * @author Seth Fitzsimmons
  */
 public abstract class AbstractBeanIndexer extends AbstractIndexer {
-	/** List of annotations used for indexing (does not include sorting) */
-	private static final Class[] annotations = { Indexed.class, Stored.class };
-
 	private static final Logger log = Logger
 			.getLogger(AbstractBeanIndexer.class);
 
@@ -65,7 +63,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 			final PropertyDescriptor descriptor, final Stack<String> stack,
 			final float inheritedBoost) throws IndexingException {
 		final Method readMethod = descriptor.getReadMethod();
-		for (final Class<? extends Annotation> annotationClass : annotations) {
+		for (final Class<? extends Annotation> annotationClass : Searchable.INDEXING_ANNOTATIONS) {
 			if (null != readMethod
 					&& AnnotationUtils.isAnnotationPresent(readMethod,
 							annotationClass)) {
@@ -111,15 +109,16 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 	 * @return Document with additional fields.
 	 * @throws IndexingException
 	 */
-	private Document addFields(final Document doc, final String fieldname,
+	protected Document addFields(final Document doc, final String fieldname,
 			final Object prop, final PropertyDescriptor descriptor,
 			final Stack<String> stack, final float inheritedBoost)
 			throws IndexingException {
 		if (prop instanceof Date) {
 			// handle Dates specially
-			float boost = getBoost(descriptor);
+			float boost = SearchableUtils.getBoost(descriptor);
 
 			// TODO allow resolution to be specified in annotation
+			// TODO serialize as canonical date (for Solr)
 			final Field field = new Field(getFieldname(fieldname, stack),
 					DateTools.dateToString((Date) prop,
 							DateTools.Resolution.SECOND), Field.Store.YES,
@@ -128,7 +127,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 			doc.add(field);
 		} else if (prop instanceof Iterable) {
 			// create multiple fields for things that can be iterated over
-			float boost = getBoost(descriptor);
+			float boost = SearchableUtils.getBoost(descriptor);
 
 			for (final Object o : (Iterable) prop) {
 				addFields(doc, fieldname, o, descriptor, stack, inheritedBoost
@@ -136,7 +135,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 			}
 		} else if (prop instanceof Object[]) {
 			// create multiple fields for arrays of things
-			float boost = getBoost(descriptor);
+			float boost = SearchableUtils.getBoost(descriptor);
 
 			for (final Object o : (Object[]) prop) {
 				addFields(doc, fieldname, o, descriptor, stack, inheritedBoost
@@ -147,15 +146,15 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 			stack.push(fieldname);
 
 			processBean(doc, (Searchable) prop, stack, inheritedBoost
-					* getBoost(descriptor));
+					* SearchableUtils.getBoost(descriptor));
 
 			stack.pop();
 		} else {
 			final String value = prop.toString();
-			float boost = getBoost(descriptor);
+			float boost = SearchableUtils.getBoost(descriptor);
 
 			final Field field = new Field(getFieldname(fieldname, stack),
-					value, isStored(descriptor), getIndexStyle(descriptor),
+					value, SearchableUtils.isStored(descriptor), SearchableUtils.getIndexStyle(descriptor),
 					isVectorized(descriptor));
 			field.setBoost(inheritedBoost * boost);
 			doc.add(field);
@@ -174,7 +173,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 	 * @return Document with additional fields.
 	 * @throws IndexingException
 	 */
-	private Document addSortableFields(final Document doc,
+	protected Document addSortableFields(final Document doc,
 			final Searchable bean, final PropertyDescriptor descriptor,
 			final Stack<String> stack) throws IndexingException {
 		final Method readMethod = descriptor.getReadMethod();
@@ -221,38 +220,6 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 	}
 
 	/**
-	 * Does this property contain any index-specific annotations?
-	 * 
-	 * @param descriptor Property descriptor.
-	 * @return Whether this property contains any index-specific annotations. 
-	 */
-	private boolean containsIndexAnnotations(final PropertyDescriptor descriptor) {
-		final Method readMethod = descriptor.getReadMethod();
-
-		boolean containsIndexAnnotations = false;
-
-		for (final Class<? extends Annotation> annotationClass : annotations) {
-			if (AnnotationUtils
-					.isAnnotationPresent(readMethod, annotationClass))
-				containsIndexAnnotations = true;
-		}
-
-		return containsIndexAnnotations;
-	}
-
-	/**
-	 * Does this property contain any sortable-specific annotations?
-	 * 
-	 * @param descriptor Property descriptor.
-	 * @return Whether this property contains any sortable-specific annotations. 
-	 */
-	private boolean containsSortableAnnotations(
-			final PropertyDescriptor descriptor) {
-		return AnnotationUtils.isAnnotationPresent(descriptor.getReadMethod(),
-				Searchable.Sortable.class);
-	}
-
-	/**
 	 * Add a searchable bean to the index.
 	 * 
 	 * @param bean Bean to index.
@@ -289,23 +256,6 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 	 */
 	protected void doDelete(final Searchable bean) throws IndexException {
 		delete(getType(bean), getId(bean));
-	}
-
-	/**
-	 * Gets the boost factor for a specified property.
-	 * 
-	 * @param descriptor Property descriptor.
-	 * @return Boost factor for a specified property.
-	 */
-	private float getBoost(final PropertyDescriptor descriptor) {
-		final Annotation annotation = AnnotationUtils.getAnnotation(descriptor
-				.getReadMethod(), Searchable.Indexed.class);
-		if (annotation instanceof Searchable.Indexed) {
-			final Searchable.Indexed i = (Searchable.Indexed) annotation;
-			return i.boost();
-		}
-
-		return DEFAULT_BOOST_VALUE;
 	}
 
 	/**
@@ -358,7 +308,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 
 		String fieldname = descriptor.getName();
 
-		for (final Class<? extends Annotation> annotationClass : annotations) {
+		for (final Class<? extends Annotation> annotationClass : Searchable.INDEXING_ANNOTATIONS) {
 			final Annotation annotation = AnnotationUtils.getAnnotation(
 					descriptor.getReadMethod(), annotationClass);
 			if (annotation instanceof Searchable.Indexed) {
@@ -420,25 +370,6 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 	}
 
 	/**
-	 * How should the specified property be indexed?
-	 * 
-	 * @param descriptor Property descriptor.
-	 * @return How the specified property should be indexed.
-	 */
-	private Field.Index getIndexStyle(final PropertyDescriptor descriptor) {
-		final Annotation annotation = AnnotationUtils.getAnnotation(descriptor
-				.getReadMethod(), Searchable.Indexed.class);
-		if (null != annotation) {
-			if (((Searchable.Indexed) annotation).tokenized()) {
-				return Field.Index.TOKENIZED;
-			} else {
-				return Field.Index.UN_TOKENIZED;
-			}
-		}
-		return Field.Index.NO;
-	}
-
-	/**
 	 * Gets the type of the object being indexed.  If a class has been enhanced
 	 * by CGLIB, the base class name is returned.
 	 * 
@@ -461,7 +392,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 	 * @return Whether this property should be treated as nested.
 	 */
 	private boolean isNested(final PropertyDescriptor descriptor) {
-		for (final Class<? extends Annotation> annotationClass : annotations) {
+		for (final Class<? extends Annotation> annotationClass : Searchable.INDEXING_ANNOTATIONS) {
 			final Annotation annotation = AnnotationUtils.getAnnotation(
 					descriptor.getReadMethod(), annotationClass);
 			if (annotation instanceof Indexed) {
@@ -490,29 +421,6 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 			return annotation.nested();
 
 		return false;
-	}
-
-	/**
-	 * Should the specified property be stored in the index?
-	 * 
-	 * @param descriptor Property descriptor.
-	 * @return Whether the specified property should be stored in the index.
-	 */
-	private Field.Store isStored(final PropertyDescriptor descriptor) {
-		for (final Class<? extends Annotation> annotationClass : annotations) {
-			final Annotation annotation = AnnotationUtils.getAnnotation(
-					descriptor.getReadMethod(), annotationClass);
-			if (annotation instanceof Searchable.Indexed) {
-				if (((Searchable.Indexed) annotation).stored())
-					return Field.Store.YES;
-				else
-					return Field.Store.NO;
-			} else if (annotation instanceof Searchable.Stored) {
-				return Field.Store.YES;
-			}
-		}
-
-		return Field.Store.NO;
 	}
 
 	/**
@@ -555,7 +463,7 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 	 */
 	private Document processBean(final Document doc, final Searchable bean,
 			final Stack<String> stack) throws IndexingException {
-		return processBean(doc, bean, stack, DEFAULT_BOOST_VALUE);
+		return processBean(doc, bean, stack, Searchable.DEFAULT_BOOST_VALUE);
 	}
 
 	/**
@@ -574,10 +482,10 @@ public abstract class AbstractBeanIndexer extends AbstractIndexer {
 		// iterate through fields
 		for (final PropertyDescriptor d : PropertyUtils
 				.getPropertyDescriptors(bean)) {
-			if (containsIndexAnnotations(d))
+			if (SearchableUtils.containsIndexAnnotations(d))
 				addBeanFields(doc, bean, d, stack, boost);
 
-			if (containsSortableAnnotations(d))
+			if (SearchableUtils.containsSortableAnnotations(d))
 				addSortableFields(doc, bean, d, stack);
 		}
 		return doc;

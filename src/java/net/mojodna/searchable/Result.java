@@ -30,54 +30,54 @@ public interface Result {
 	 * 
 	 * @return Ranking.
 	 */
-	public int getRanking();
+	int getRanking();
 
 	/**
 	 * Gets this result's score.
 	 * 
 	 * @return Score.
 	 */
-	public float getScore();
+	float getScore();
 
 	/**
 	 * Gets this result's search extract.
 	 * 
 	 * @return Highlighted excerpted field.
 	 */
-	public String getSearchExtract();
+	String getSearchExtract();
 
 	/**
 	 * Gets fields that were stored in the index for this result.
 	 * 
 	 * @return Map containing stored field names and values.
 	 */
-	public Map<String, String> getStoredFields();
+	Map<String, String> getStoredFields();
 
 	/**
 	 * Sets this result's ranking in the resultset.
 	 * 
 	 * @param ranking Ranking.
 	 */
-	public void setRanking(int ranking);
+	void setRanking(int ranking);
 
 	/**
 	 * Sets this result's score.
 	 * 
 	 * @param score Score.
 	 */
-	public void setScore(float score);
+	void setScore(float score);
 
 	/**
 	 * Sets this result's search extract.
 	 * 
 	 * @param extract Highlighted excerpted field.
 	 */
-	public void setSearchExtract(String extract);
+	void setSearchExtract(String extract);
 
 	/**
 	 * Sets fields that were stored in the index for this result.
 	 * 
 	 * @param storedFields Stored field names and values.
 	 */
-	public void setStoredFields(Map<String, String> storedFields);
+	void setStoredFields(Map<String, String> storedFields);
 }

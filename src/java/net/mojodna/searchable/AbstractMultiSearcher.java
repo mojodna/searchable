@@ -24,6 +24,7 @@ import java.util.Map;
 
 import net.mojodna.searchable.Searchable.DefaultFields;
 import net.mojodna.searchable.util.AnnotationUtils;
+import net.mojodna.searchable.util.SearchableUtils;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;

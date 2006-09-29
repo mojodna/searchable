@@ -40,8 +40,7 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final Query query)
+	public ResultSet<? extends Searchable> search(final Query query)
 			throws IndexException {
 		return doSearch(query);
 	}
@@ -54,9 +53,8 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final Query query, final Filter filter)
-			throws IndexException {
+	public ResultSet<? extends Searchable> search(final Query query,
+			final Filter filter) throws IndexException {
 		return doSearch(query, filter);
 	}
 
@@ -70,138 +68,7 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final Query query, final Filter filter,
-			final Integer offset, final Integer count) throws IndexException {
-		return doSearch(query, filter, offset, count);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param filter Filter to use.
-	 * @param offset Offset to begin result set at.
-	 * @param count Number of results to return.
-	 * @param sortField Field to sort by.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final Query query, final Filter filter,
-			final Integer offset, final Integer count, final String sortField)
-			throws IndexException {
-		return doSearch(query, filter, offset, count, sortField);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param filter Filter to use.
-	 * @param offset Offset to begin result set at.
-	 * @param count Number of results to return.
-	 * @param sortField Field to sort by.
-	 * @param reverse Whether to reverse the resultset. 
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final Query query, final Filter filter,
-			final Integer offset, final Integer count, final String sortField,
-			final boolean reverse) throws IndexException {
-		return doSearch(query, filter, offset, count, sortField, reverse);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param offset Offset to begin result set at.
-	 * @param count Number of results to return.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final Query query,
-			final Integer offset, final Integer count) throws IndexException {
-		return doSearch(query, offset, count);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param offset Offset to begin result set at.
-	 * @param count Number of results to return.
-	 * @param sortField Field to sort by.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final Query query,
-			final Integer offset, final Integer count, final String sortField)
-			throws IndexException {
-		return doSearch(query, offset, count, sortField);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param offset Offset to begin result set at.
-	 * @param count Number of results to return.
-	 * @param sortField Field to sort by.
-	 * @param reverse Whether to reverse the resultset. 
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final Query query,
-			final Integer offset, final Integer count, final String sortField,
-			final boolean reverse) throws IndexException {
-		return doSearch(query, offset, count, sortField, reverse);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query)
-			throws IndexException {
-		return doSearch(query);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param filter Filter to use.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query, final Filter filter)
-			throws IndexException {
-		return doSearch(query, filter);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param filter Filter to use.
-	 * @param offset Offset to begin result set at.
-	 * @param count Number of results to return.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
+	public ResultSet<? extends Searchable> search(final Query query,
 			final Filter filter, final Integer offset, final Integer count)
 			throws IndexException {
 		return doSearch(query, filter, offset, count);
@@ -214,30 +81,11 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @param filter Filter to use.
 	 * @param offset Offset to begin result set at.
 	 * @param count Number of results to return.
-	 * @param sort Sort to use.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
-			final Filter filter, final Integer offset, final Integer count,
-			final Sort sort) throws IndexException {
-		return doSearch(query, filter, offset, count, sort);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param filter Filter to use.
-	 * @param offset Offset to begin result set at.
-	 * @param count Number of results to return.
 	 * @param sortField Field to sort by.
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
+	public ResultSet<? extends Searchable> search(final Query query,
 			final Filter filter, final Integer offset, final Integer count,
 			final String sortField) throws IndexException {
 		return doSearch(query, filter, offset, count, sortField);
@@ -255,8 +103,7 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
+	public ResultSet<? extends Searchable> search(final Query query,
 			final Filter filter, final Integer offset, final Integer count,
 			final String sortField, final boolean reverse)
 			throws IndexException {
@@ -267,43 +114,12 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * Search the index with the specified query.
 	 * 
 	 * @param query Query to use.
-	 * @param filter Filter to use.
-	 * @param sort Sort to use.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
-			final Filter filter, final Sort sort) throws IndexException {
-		return doSearch(query, filter, sort);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param filter Filter to use.
-	 * @param sortField Field to sort by.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
-			final Filter filter, final String sortField) throws IndexException {
-		return doSearch(query, filter, sortField);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
 	 * @param offset Offset to begin result set at.
 	 * @param count Number of results to return.
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
+	public ResultSet<? extends Searchable> search(final Query query,
 			final Integer offset, final Integer count) throws IndexException {
 		return doSearch(query, offset, count);
 	}
@@ -314,29 +130,11 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @param query Query to use.
 	 * @param offset Offset to begin result set at.
 	 * @param count Number of results to return.
-	 * @param sort Sort to use.
-	 * @return ResultSet containing results.
-	 * @throws IndexException
-	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
-			final Integer offset, final Integer count, final Sort sort)
-			throws IndexException {
-		return doSearch(query, offset, count, sort);
-	}
-
-	/**
-	 * Search the index with the specified query.
-	 * 
-	 * @param query Query to use.
-	 * @param offset Offset to begin result set at.
-	 * @param count Number of results to return.
 	 * @param sortField Field to sort by.
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
+	public ResultSet<? extends Searchable> search(final Query query,
 			final Integer offset, final Integer count, final String sortField)
 			throws IndexException {
 		return doSearch(query, offset, count, sortField);
@@ -353,8 +151,192 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
+	public ResultSet<? extends Searchable> search(final Query query,
+			final Integer offset, final Integer count, final String sortField,
+			final boolean reverse) throws IndexException {
+		return doSearch(query, offset, count, sortField, reverse);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<Searchable> search(final String query)
+			throws IndexException {
+		return doSearch(query);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param filter Filter to use.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Filter filter) throws IndexException {
+		return doSearch(query, filter);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param filter Filter to use.
+	 * @param offset Offset to begin result set at.
+	 * @param count Number of results to return.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Filter filter, final Integer offset, final Integer count)
+			throws IndexException {
+		return doSearch(query, filter, offset, count);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param filter Filter to use.
+	 * @param offset Offset to begin result set at.
+	 * @param count Number of results to return.
+	 * @param sort Sort to use.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Filter filter, final Integer offset, final Integer count,
+			final Sort sort) throws IndexException {
+		return doSearch(query, filter, offset, count, sort);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param filter Filter to use.
+	 * @param offset Offset to begin result set at.
+	 * @param count Number of results to return.
+	 * @param sortField Field to sort by.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Filter filter, final Integer offset, final Integer count,
+			final String sortField) throws IndexException {
+		return doSearch(query, filter, offset, count, sortField);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param filter Filter to use.
+	 * @param offset Offset to begin result set at.
+	 * @param count Number of results to return.
+	 * @param sortField Field to sort by.
+	 * @param reverse Whether to reverse the resultset. 
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Filter filter, final Integer offset, final Integer count,
+			final String sortField, final boolean reverse)
+			throws IndexException {
+		return doSearch(query, filter, offset, count, sortField, reverse);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param filter Filter to use.
+	 * @param sort Sort to use.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Filter filter, final Sort sort) throws IndexException {
+		return doSearch(query, filter, sort);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param filter Filter to use.
+	 * @param sortField Field to sort by.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Filter filter, final String sortField) throws IndexException {
+		return doSearch(query, filter, sortField);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param offset Offset to begin result set at.
+	 * @param count Number of results to return.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Integer offset, final Integer count) throws IndexException {
+		return doSearch(query, offset, count);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param offset Offset to begin result set at.
+	 * @param count Number of results to return.
+	 * @param sort Sort to use.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Integer offset, final Integer count, final Sort sort)
+			throws IndexException {
+		return doSearch(query, offset, count, sort);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param offset Offset to begin result set at.
+	 * @param count Number of results to return.
+	 * @param sortField Field to sort by.
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
+			final Integer offset, final Integer count, final String sortField)
+			throws IndexException {
+		return doSearch(query, offset, count, sortField);
+	}
+
+	/**
+	 * Search the index with the specified query.
+	 * 
+	 * @param query Query to use.
+	 * @param offset Offset to begin result set at.
+	 * @param count Number of results to return.
+	 * @param sortField Field to sort by.
+	 * @param reverse Whether to reverse the resultset. 
+	 * @return ResultSet containing results.
+	 * @throws IndexException
+	 */
+	public ResultSet<? extends Searchable> search(final String query,
 			final Integer offset, final Integer count, final String sortField,
 			final boolean reverse) throws IndexException {
 		return doSearch(query, offset, count, sortField, reverse);
@@ -368,9 +350,8 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query, final Sort sort)
-			throws IndexException {
+	public ResultSet<? extends Searchable> search(final String query,
+			final Sort sort) throws IndexException {
 		return doSearch(query, sort);
 	}
 
@@ -382,8 +363,7 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	@SuppressWarnings("unchecked")
-	public ResultSet<Searchable> search(final String query,
+	public ResultSet<? extends Searchable> search(final String query,
 			final String sortField) throws IndexException {
 		return doSearch(query, sortField);
 	}

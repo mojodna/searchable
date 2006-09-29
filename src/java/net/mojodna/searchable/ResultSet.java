@@ -37,47 +37,47 @@ public interface ResultSet<E extends Result> extends Iterable<E> {
 	 * 
 	 * @return Number of results in this set.
 	 */
-	public int count();
+	int count();
 
 	/**
 	 * Gets the Query that was used to generate this set.
 	 * 
 	 * @return Query.
 	 */
-	public Query getQuery();
+	Query getQuery();
 
 	/**
 	 * Gets the list of results present in this set.
 	 * 
 	 * @return List of results.
 	 */
-	public List<E> getResults();
+	List<E> getResults();
 
 	/**
 	 * Is this empty?
 	 * 
 	 * @return Whether this resultset is empty.
 	 */
-	public boolean isEmpty();
+	boolean isEmpty();
 
 	/**
 	 * Gets an iterator over this resultset.
 	 * 
 	 * @return Iterator over this resultset.
 	 */
-	public Iterator<E> iterator();
+	Iterator<E> iterator();
 
 	/**
 	 * Offset of first result in this set.
 	 * 
 	 * @return Offset of first result in this set.
 	 */
-	public int offset();
+	int offset();
 
 	/**
 	 * Total number of results available.
 	 * 
 	 * @return Total number of results available.
 	 */
-	public int size();
+	int size();
 }

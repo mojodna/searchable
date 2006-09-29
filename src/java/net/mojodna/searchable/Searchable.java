@@ -27,6 +27,9 @@ import java.lang.annotation.Target;
  * @author Seth Fitzsimmons
  */
 public interface Searchable extends Result {
+	/** List of annotations used for indexing (does not include sorting) */
+	Class[] INDEXING_ANNOTATIONS = { Indexed.class, Stored.class };
+	
 	/**
 	 * Provide a list of default fields to search when searching for an object
 	 * of the annotated type.
@@ -90,7 +93,7 @@ public interface Searchable extends Result {
 		/**
 		 * @return Boost factor.
 		 */
-		float boost() default 1.0F;
+		float boost() default DEFAULT_BOOST_VALUE;
 
 		/**
 		 * @return Indexed name.
@@ -170,4 +173,7 @@ public interface Searchable extends Result {
 		 */
 		boolean value() default true;
 	}
+
+	/** Default boost value (1.0) */
+	static final float DEFAULT_BOOST_VALUE = 1F;
 }

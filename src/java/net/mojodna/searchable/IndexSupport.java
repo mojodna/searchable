@@ -47,6 +47,7 @@ public abstract class IndexSupport {
 	public static final Analyzer DEFAULT_ANALYZER = new StandardAnalyzer();
 
 	/** Default boost value (1.0) */
+	@Deprecated
 	public static final float DEFAULT_BOOST_VALUE = 1F;
 
 	/** Default index path ($TEMP/lucene) */
@@ -110,7 +111,7 @@ public abstract class IndexSupport {
 			((BatchIndexer) this).flush();
 		}
 
-		optimizeIndex();
+		optimize();
 
 		try {
 			if (readers.containsKey(getIndexPath())) {
@@ -313,7 +314,7 @@ public abstract class IndexSupport {
 	 * 
 	 * @throws IndexException
 	 */
-	protected void optimizeIndex() throws IndexException {
+	public void optimize() throws IndexException {
 		try {
 			getIndexModifier().optimize();
 		} catch (final IOException e) {

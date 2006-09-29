@@ -31,7 +31,7 @@ public interface Indexer<E extends Searchable> {
 	 * @return Document
 	 * @throws IndexException
 	 */
-	public Document add(E object) throws IndexException;
+	Document add(E object) throws IndexException;
 
 	/**
 	 * Deletes an object from the index.
@@ -39,7 +39,12 @@ public interface Indexer<E extends Searchable> {
 	 * @param object Object to delete.
 	 * @throws IndexException
 	 */
-	public void delete(E object) throws IndexException;
+	void delete(E object) throws IndexException;
 
-	// TODO add close, optimize methods
+	/**
+	 * Optimize the index.
+	 *
+	 * @throws IndexException
+	 */
+	void optimize() throws IndexException;
 }

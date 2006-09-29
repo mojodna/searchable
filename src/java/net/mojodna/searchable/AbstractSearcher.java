@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import net.mojodna.searchable.converter.UUIDConverter;
+import net.mojodna.searchable.util.SearchableUtils;
 
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.PropertyUtils;

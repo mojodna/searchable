@@ -27,19 +27,19 @@ public interface BatchIndexer<E extends Searchable> extends Indexer<E> {
 	 * 
 	 * @throws IndexException
 	 */
-	public void flush() throws IndexException;
+	void flush() throws IndexException;
 
 	/**
 	 * Is this running in batch mode?
 	 * 
 	 * @return Whether this indexer is running in batch mode.
 	 */
-	public boolean isBatchMode();
+	boolean isBatchMode();
 
 	/**
 	 * Sets whether this indexer is running in batch mode.
 	 * 
 	 * @param batchMode Whether this indexer should run in batch mode.
 	 */
-	public void setBatchMode(boolean batchMode);
+	void setBatchMode(boolean batchMode);
 }
