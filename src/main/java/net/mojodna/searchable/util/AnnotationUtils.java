@@ -135,7 +135,7 @@ public class AnnotationUtils {
 		for (final Class c : AnnotationUtils.getClasses(method
 				.getDeclaringClass())) {
 			try {
-				final Method m = c.getMethod(method.getName(), (Class[]) method
+				final Method m = c.getMethod(method.getName(), method
 						.getParameterTypes());
 				if (m.isAnnotationPresent(annotationClass)) {
 					annotation = m.getAnnotation(annotationClass);

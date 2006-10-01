@@ -165,7 +165,7 @@ public final class SearchableUtils {
 				final Field.Index indexStyle = getIndexStyle(d);
 				final float boost = getBoost(d);
 				for (final String name : getFieldnames(d)) {
-					final Field f = new Field(name, clazz.getName(), stored,
+					final Field f = new Field(name, clazz.getName() + "#" + d.getName(), stored,
 							indexStyle);
 					f.setBoost(boost);
 					fields.add(f);

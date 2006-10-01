@@ -23,6 +23,7 @@ import java.util.Stack;
 import net.mojodna.searchable.AbstractBeanIndexer;
 import net.mojodna.searchable.BatchIndexer;
 import net.mojodna.searchable.IndexException;
+import net.mojodna.searchable.IndexSupport;
 import net.mojodna.searchable.IndexingException;
 import net.mojodna.searchable.Searchable;
 
@@ -75,7 +76,7 @@ public class SolrIndexer extends AbstractBeanIndexer implements
 	 */
 	protected void commit() throws IOException {
 		final PostMethod post = new PostMethod(solrPath);
-		post.setRequestEntity(new StringRequestEntity("<commit/>", "text/xml",
+		post.setRequestEntity(new StringRequestEntity("<commit waitFlush=\"false\" waitSearcher=\"false\"/>", "text/xml",
 				"UTF-8"));
 		log.debug("Committing.");
 		getHttpClient().executeMethod(post);
@@ -88,7 +89,7 @@ public class SolrIndexer extends AbstractBeanIndexer implements
 	@Override
 	protected void delete(final Serializable key) throws IndexingException {
 		final Element delete = new Element("delete").addContent(new Element(
-				"id").addContent(key.toString()));
+				"query").addContent(IndexSupport.COMPOUND_ID_FIELD_NAME + ":" + key.toString()));
 
 		// now do something with the delete block
 		try {
@@ -127,7 +128,7 @@ public class SolrIndexer extends AbstractBeanIndexer implements
 	public void optimize() throws IndexingException {
 		try {
 			PostMethod post = new PostMethod(solrPath);
-			post.setRequestEntity(new StringRequestEntity("<optimize/>",
+			post.setRequestEntity(new StringRequestEntity("<optimize waitFlush=\"false\" waitSearcher=\"false\"/>",
 					"text/xml", "UTF-8"));
 			log.debug("Optimizing.");
 			getHttpClient().executeMethod(post);
