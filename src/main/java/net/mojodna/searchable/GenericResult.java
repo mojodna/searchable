@@ -15,6 +15,8 @@
  */
 package net.mojodna.searchable;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
+
 /**
  * A container for generic results.  This is used when an object of the
  * correct type cannot be instantiated.
@@ -49,7 +51,7 @@ public class GenericResult extends AbstractResult implements Result {
 	 * 
 	 * @param id
 	 */
-	void setId(final String id) {
+	public void setId(final String id) {
 		this.id = id;
 	}
 
@@ -58,7 +60,13 @@ public class GenericResult extends AbstractResult implements Result {
 	 * 
 	 * @param type Object type.
 	 */
-	void setType(final String type) {
+	public void setType(final String type) {
 		this.type = type;
 	}
+
+	@Override
+    public String toString() {
+        return new ToStringBuilder(this).append("id", this.id).append("score", this.getScore()).append("type", this.type).append("storedFields",
+                this.getStoredFields()).append("searchExtract", this.getSearchExtract()).append("ranking", this.getRanking()).toString();
+    }
 }

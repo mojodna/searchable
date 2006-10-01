@@ -288,7 +288,7 @@ public class BeanSearcher extends AbstractSearcher implements
 	 * @return ResultSet containing results.
 	 * @throws IndexException
 	 */
-	public ResultSet<? extends Searchable> search(final String query,
+	public ResultSet<Searchable> search(final String query,
 			final Integer offset, final Integer count) throws IndexException {
 		return doSearch(query, offset, count);
 	}

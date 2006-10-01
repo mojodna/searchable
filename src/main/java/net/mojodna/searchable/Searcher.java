@@ -31,4 +31,15 @@ public interface Searcher<E extends Result> {
 	 * @throws IndexException
 	 */
 	ResultSet<E> search(String query) throws IndexException;
+    
+    /**
+     * Searches the index.
+     * 
+     * @param query Query to use.
+     * @param start First result to return (paging).
+     * @param count Number of results to return.
+     * @return ResultSet for the specified query.
+     * @throws IndexException
+     */
+    ResultSet<E> search(String query, Integer start, Integer count) throws IndexException;
 }
