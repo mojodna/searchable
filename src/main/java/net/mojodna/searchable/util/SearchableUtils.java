@@ -20,11 +20,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.mojodna.searchable.IndexSupport;
 import net.mojodna.searchable.Searchable;
@@ -40,9 +40,9 @@ import org.apache.lucene.document.Field;
  * @author Seth Fitzsimmons
  */
 public final class SearchableUtils {
-	private static final Map<String, Class<?>> returnTypeCache = new HashMap<String, Class<?>>();
+	private static final Map<String, Class<?>> returnTypeCache = new ConcurrentHashMap<String, Class<?>>();
 
-	private static final Map<String, String> returnTypeMissCache = new HashMap<String, String>();
+	private static final Map<String, String> returnTypeMissCache = new ConcurrentHashMap<String, String>();
 
 	/**
 	 * Does this property contain any index-specific annotations?
